@@ -1,0 +1,28 @@
+# Credenciales y secretos
+credenciales.txt
+.env
+.env.local
+.env.production
+
+# Dependencias
+node_modules/
+.expo/
+
+# Build
+dist/
+build/
+*.apk
+*.ipa
+*.aab
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
