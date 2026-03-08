@@ -1,6 +1,5 @@
-# Credenciales y secretos
+# Credenciales locales (el .env SÍ se sube al repo)
 credenciales.txt
-.env
 .env.local
 .env.production
 
