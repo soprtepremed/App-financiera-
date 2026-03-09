@@ -11,7 +11,8 @@ import { useAuthStore } from '../store/authStore';
 export interface IncomeSource {
     id: string;
     user_id: string;
-    source_name: string;
+    /** Nombre de la fuente de ingreso — columna 'name' en DB */
+    name: string;
     amount: number;
     frequency: 'weekly' | 'biweekly' | 'monthly';
     is_active: boolean;
@@ -19,7 +20,8 @@ export interface IncomeSource {
 }
 
 export interface IncomeFormData {
-    source_name: string;
+    /** Coincide con la columna 'name' en la tabla income_sources */
+    name: string;
     amount: number;
     frequency: 'weekly' | 'biweekly' | 'monthly';
 }
@@ -142,9 +144,15 @@ export function useCreateIncome() {
         mutationFn: async (formData: IncomeFormData) => {
             if (!user) throw new Error('No autenticado');
 
+            // Mapeo explícito para evitar confusiones con el nombre del campo
             const { data, error } = await supabase
                 .from('income_sources')
-                .insert({ user_id: user.id, ...formData })
+                .insert({
+                    user_id: user.id,
+                    name: formData.name,           // columna 'name' en DB
+                    amount: formData.amount,
+                    frequency: formData.frequency,
+                })
                 .select()
                 .single();
 

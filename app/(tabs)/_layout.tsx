@@ -10,6 +10,9 @@ import { TYPOGRAPHY, SPACING, SHADOWS, RADIUS } from '../../src/constants/theme'
 import { useThemeStore } from '../../src/store/themeStore';
 import { getThemeColors } from '../../src/constants/theme';
 
+/** Ancho máximo del tab bar en web para que 5 tabs no se compriman */
+const TAB_BAR_MAX_WIDTH = 600;
+
 /** Ícono de tab con indicador activo */
 function TabIcon({ name, focusedName, focused, isDark }: {
     name: keyof typeof Ionicons.glyphMap;
@@ -87,6 +90,15 @@ export default function TabsLayout() {
                                 ? 'rgba(15, 23, 42, 0.92)'
                                 : 'rgba(255, 255, 255, 0.92)',
                             borderTopColor: C.border.primary,
+                            // En web: centrar el tab bar con ancho limitado
+                            ...(Platform.OS === 'web' && {
+                                left: '50%',
+                                transform: [{ translateX: '-50%' }] as any,
+                                maxWidth: TAB_BAR_MAX_WIDTH,
+                                width: '100%',
+                                borderTopLeftRadius: RADIUS['3xl'],
+                                borderTopRightRadius: RADIUS['3xl'],
+                            }),
                         },
                     ],
                     tabBarActiveTintColor: C.accent.primary,
@@ -165,17 +177,19 @@ const styles = StyleSheet.create({
         height: Platform.OS === 'ios' ? 90 : 70,
         paddingBottom: Platform.OS === 'ios' ? 24 : 10,
         paddingTop: 10,
-        paddingHorizontal: 40,
+        // Reducir padding horizontal para que 5 tabs quepan sin cortarse
+        paddingHorizontal: Platform.OS === 'web' ? 4 : 16,
         borderTopLeftRadius: RADIUS['3xl'],
         borderTopRightRadius: RADIUS['3xl'],
         ...SHADOWS.lg,
     },
     tabLabel: {
         fontFamily: TYPOGRAPHY.family.bold,
-        fontSize: TYPOGRAPHY.size.xs,
-        letterSpacing: TYPOGRAPHY.letterSpacing.widest,
+        // Reducir tamaño y espaciado para evitar overflow en pantallas pequeñas
+        fontSize: 9,
+        letterSpacing: 0.4,
         textTransform: 'uppercase',
-        marginTop: 4,
+        marginTop: 2,
     },
     iconContainer: {
         alignItems: 'center',

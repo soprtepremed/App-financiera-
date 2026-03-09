@@ -73,10 +73,12 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
                 card_id: selectedCardId ?? '',
                 expense_date: new Date().toISOString().split('T')[0],
                 is_recurring: isRecurring,
-                is_msi: false,
             });
             handleClose();
-        } catch { Alert.alert('Error', 'No se pudo registrar el gasto'); }
+        } catch (err: any) {
+            const msg = err?.message ?? 'No se pudo registrar el gasto';
+            Alert.alert('Error al guardar', msg);
+        }
     };
 
     return (

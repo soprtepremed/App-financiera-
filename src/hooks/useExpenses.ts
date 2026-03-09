@@ -16,7 +16,6 @@ export interface ExpenseFormData {
     amount: number;
     expense_date: string;
     is_recurring: boolean;
-    is_msi: boolean;
     msi_months?: number;
     notes?: string;
 }

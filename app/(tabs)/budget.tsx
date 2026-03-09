@@ -196,7 +196,7 @@ function IncomeRow({ income, isDark }: { income: any; isDark: boolean }) {
     return (
         <View style={[styles.incomeRow, { borderBottomColor: C.border.secondary }]}>
             <View>
-                <Text style={[styles.incomeName, { color: C.text.primary }]}>{income.source_name}</Text>
+                <Text style={[styles.incomeName, { color: C.text.primary }]}>{income.name}</Text>
                 <Text style={[styles.incomeFreq, { color: C.text.tertiary }]}>
                     {freqLabels[income.frequency] ?? income.frequency}
                 </Text>
@@ -225,15 +225,20 @@ function AddIncomeModal({ visible, onClose, isDark }: {
     const handleSave = async () => {
         if (!name.trim() || !amount || parseFloat(amount) <= 0) return;
 
-        await createIncome.mutateAsync({
-            source_name: name.trim(),
-            amount: parseFloat(amount),
-            frequency,
-        });
-        setName('');
-        setAmount('');
-        setFrequency('monthly');
-        onClose();
+        try {
+            await createIncome.mutateAsync({
+                name: name.trim(),      // columna 'name' en la tabla income_sources
+                amount: parseFloat(amount),
+                frequency,
+            });
+            setName('');
+            setAmount('');
+            setFrequency('monthly');
+            onClose();
+        } catch (err: any) {
+            const msg = err?.message ?? 'No se pudo guardar el ingreso';
+            Alert.alert('Error al guardar', msg);
+        }
     };
 
     const frequencies: { key: 'weekly' | 'biweekly' | 'monthly'; label: string }[] = [
