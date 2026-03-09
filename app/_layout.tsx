@@ -4,12 +4,7 @@
  * inicialización de auth y protección de rutas
  */
 
-/**
- * ⚠️ MODO DESARROLLO
- * Cambia a `true` para saltar el login e ir directo a los tabs.
- * Recuerda poner `false` antes de publicar en producción.
- */
-const DEV_BYPASS = true;
+
 import { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
@@ -46,19 +41,8 @@ function useProtectedRoute() {
     const segments = useSegments();
     const router = useRouter();
 
-    // ── Bypass de desarrollo: ir directo a tabs ──
+    // ── Re-check post-OAuth ──
     useEffect(() => {
-        if (DEV_BYPASS) {
-            const notInTabs = segments[0] !== '(tabs)';
-            if (notInTabs) {
-                router.replace('/(tabs)');
-            }
-        }
-    }, [segments]);
-
-    // ── Re-check post-OAuth (solo en modo normal) ──
-    useEffect(() => {
-        if (DEV_BYPASS) return;
         if (typeof window === 'undefined') return;
 
         const hash = window.location.hash;
@@ -71,9 +55,8 @@ function useProtectedRoute() {
         }
     }, []);
 
-    // ── Protección normal de rutas ──
+    // ── Protección de rutas ──
     useEffect(() => {
-        if (DEV_BYPASS) return;
         if (!isInitialized) return;
 
         const inAuthGroup = segments[0] === '(auth)';
