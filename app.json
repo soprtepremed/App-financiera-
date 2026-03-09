@@ -46,7 +46,13 @@
       "orientation": "portrait",
       "scope": "/",
       "startUrl": "/",
-      "preferRelatedApplications": false
+      "preferRelatedApplications": false,
+      "meta": {
+        "apple-mobile-web-app-capable": "yes",
+        "apple-mobile-web-app-status-bar-style": "black-translucent",
+        "apple-mobile-web-app-title": "FinanzApp",
+        "mobile-web-app-capable": "yes"
+      }
     },
     "plugins": [
       "expo-router",

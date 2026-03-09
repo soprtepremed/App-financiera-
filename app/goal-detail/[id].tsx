@@ -130,9 +130,8 @@ export default function GoalDetailScreen() {
         : 0;
 
     const remaining = Math.max(0, goal.target_amount - goal.current_amount);
-    const monthsLeft = goal.monthly_contribution > 0
-        ? Math.ceil(remaining / goal.monthly_contribution)
-        : null;
+    // monthly_contribution no existe en el schema de savings_goals.
+    // La proyección de meses se elimina para evitar errores.
 
     return (
         <View style={[styles.screen, { backgroundColor: C.background.primary }]}>
@@ -144,7 +143,7 @@ export default function GoalDetailScreen() {
                     <Ionicons name="arrow-back" size={22} color={C.text.primary} />
                 </Pressable>
                 <Text style={[styles.headerTitle, { color: C.text.primary }]}>
-                    {goal.icon ?? '🎯'} {goal.goal_name}
+                    {goal.icon ?? '🎯'} {goal.name}
                 </Text>
             </View>
 
@@ -183,45 +182,30 @@ export default function GoalDetailScreen() {
                     </GlassCard>
                 </Animated.View>
 
-                {/* Proyección */}
-                {(monthsLeft !== null || goal.target_date) && (
+                {/* Proyección: solo fecha meta si existe */}
+                {goal.target_date && (
                     <Animated.View entering={FadeInDown.duration(400).delay(80)}>
                         <GlassCard variant="default" padding="lg" style={styles.sectionCard}>
                             <Text style={[styles.sectionTitle, { color: C.text.primary }]}>Proyección</Text>
                             <View style={styles.projRow}>
-                                {goal.monthly_contribution > 0 && (
-                                    <View style={styles.projItem}>
-                                        <Ionicons name="cash-outline" size={18} color={C.accent.primary} />
-                                        <Text style={[styles.projValue, { color: C.text.primary }]}>
-                                            {formatCurrency(goal.monthly_contribution)}
-                                        </Text>
-                                        <Text style={[styles.projLabel, { color: C.text.tertiary }]}>
-                                            /mes
-                                        </Text>
-                                    </View>
-                                )}
-                                {monthsLeft !== null && (
-                                    <View style={styles.projItem}>
-                                        <Ionicons name="time-outline" size={18} color={C.accent.info} />
-                                        <Text style={[styles.projValue, { color: C.text.primary }]}>
-                                            {monthsLeft} meses
-                                        </Text>
-                                        <Text style={[styles.projLabel, { color: C.text.tertiary }]}>
-                                            estimado
-                                        </Text>
-                                    </View>
-                                )}
-                                {goal.target_date && (
-                                    <View style={styles.projItem}>
-                                        <Ionicons name="calendar-outline" size={18} color={C.accent.success} />
-                                        <Text style={[styles.projValue, { color: C.text.primary }]}>
-                                            {new Date(goal.target_date).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })}
-                                        </Text>
-                                        <Text style={[styles.projLabel, { color: C.text.tertiary }]}>
-                                            fecha meta
-                                        </Text>
-                                    </View>
-                                )}
+                                <View style={styles.projItem}>
+                                    <Ionicons name="calendar-outline" size={18} color={C.accent.success} />
+                                    <Text style={[styles.projValue, { color: C.text.primary }]}>
+                                        {new Date(goal.target_date).toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })}
+                                    </Text>
+                                    <Text style={[styles.projLabel, { color: C.text.tertiary }]}>
+                                        fecha meta
+                                    </Text>
+                                </View>
+                                <View style={styles.projItem}>
+                                    <Ionicons name="trending-up-outline" size={18} color={C.accent.info} />
+                                    <Text style={[styles.projValue, { color: C.text.primary }]}>
+                                        {formatCurrency(remaining)}
+                                    </Text>
+                                    <Text style={[styles.projLabel, { color: C.text.tertiary }]}>
+                                        por ahorrar
+                                    </Text>
+                                </View>
                             </View>
                         </GlassCard>
                     </Animated.View>

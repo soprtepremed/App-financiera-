@@ -6,7 +6,7 @@
 
 
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
@@ -94,6 +94,32 @@ export default function RootLayout() {
     useEffect(() => {
         initialize();
         loadTheme(); // Carga dark/light desde SecureStore
+    }, []);
+
+    // ── Registro del Service Worker PWA (solo en web / Vercel) ──
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+        if (typeof window === 'undefined') return;
+        if (!('serviceWorker' in navigator)) return;
+
+        const registerSW = async () => {
+            try {
+                const reg = await navigator.serviceWorker.register('/sw.js', {
+                    scope: '/',
+                    updateViaCache: 'none',
+                });
+                console.log('[PWA] Service Worker registrado:', reg.scope);
+            } catch (err) {
+                console.warn('[PWA] Error al registrar Service Worker:', err);
+            }
+        };
+
+        // Registrar cuando el DOM esté listo
+        if (document.readyState === 'complete') {
+            registerSW();
+        } else {
+            window.addEventListener('load', registerSW, { once: true });
+        }
     }, []);
 
     // Protección de rutas

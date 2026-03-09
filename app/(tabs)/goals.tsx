@@ -9,6 +9,7 @@ import {
     StyleSheet,
     ScrollView,
     Pressable,
+    Alert,
     Modal,
     KeyboardAvoidingView,
     Platform,
@@ -38,8 +39,9 @@ function useGoals() {
                 .from('savings_goals')
                 .select('*')
                 .eq('user_id', user.id)
-                .eq('is_active', true)
-                .order('target_date', { ascending: true });
+                // CORRECTO: savings_goals usa 'status', NO 'is_active'
+                .in('status', ['active', 'paused'])
+                .order('priority', { ascending: true });
             if (error) throw error;
             return data ?? [];
         },
@@ -51,11 +53,24 @@ function useCreateGoal() {
     const qc = useQueryClient();
     const { user } = useAuthStore();
     return useMutation({
-        mutationFn: async (data: { goal_name: string; target_amount: number; monthly_contribution: number; target_date: string; icon?: string }) => {
+        mutationFn: async (data: {
+            /** Columna 'name' en la tabla savings_goals */
+            name: string;
+            target_amount: number;
+            target_date: string;
+            icon?: string;
+            description?: string;
+        }) => {
             if (!user) throw new Error('No autenticado');
             const { error } = await supabase
                 .from('savings_goals')
-                .insert({ user_id: user.id, current_amount: 0, ...data });
+                .insert({
+                    user_id: user.id,
+                    current_amount: 0,
+                    status: 'active',
+                    priority: 1,
+                    ...data,
+                });
             if (error) throw error;
         },
         onSuccess: () => qc.invalidateQueries({ queryKey: ['goals'] }),
@@ -173,7 +188,7 @@ export default function GoalsScreen() {
                                     <Text style={styles.goalIcon}>{goal.icon ?? '🎯'}</Text>
                                     <View style={styles.goalInfo}>
                                         <Text style={[styles.goalName, { color: C.text.primary }]}>
-                                            {goal.goal_name}
+                                            {goal.name}
                                         </Text>
                                         <Text style={[styles.goalDate, { color: C.text.tertiary }]}>
                                             Meta: {new Date(goal.target_date).toLocaleDateString('es-MX', {
@@ -197,11 +212,7 @@ export default function GoalsScreen() {
                                     </Text>
                                 </View>
 
-                                {goal.monthly_contribution > 0 && (
-                                    <Text style={[styles.goalContrib, { color: C.text.tertiary }]}>
-                                        Contribución mensual: {formatCurrency(goal.monthly_contribution)}
-                                    </Text>
-                                )}
+                                {/* monthly_contribution no existe en DB — omitido */}
 
                                 <Pressable
                                     style={styles.contributeBtn}
@@ -248,15 +259,21 @@ function AddGoalModal({ visible, onClose, isDark }: { visible: boolean; onClose:
         const targetDate = new Date();
         targetDate.setMonth(targetDate.getMonth() + monthsNeeded);
 
-        await createGoal.mutateAsync({
-            goal_name: name.trim(),
-            target_amount: targetAmount,
-            monthly_contribution: monthlyAmount,
-            target_date: targetDate.toISOString().split('T')[0],
-            icon,
-        });
-        setName(''); setTarget(''); setMonthly(''); setIcon('🎯');
-        onClose();
+        try {
+            await createGoal.mutateAsync({
+                // CORRECTO: columna 'name' en savings_goals, NO 'goal_name'
+                name: name.trim(),
+                target_amount: targetAmount,
+                target_date: targetDate.toISOString().split('T')[0],
+                icon,
+                // monthly_contribution no existe en el schema — se omite
+            });
+            setName(''); setTarget(''); setMonthly(''); setIcon('🎯');
+            onClose();
+        } catch (err: any) {
+            const msg = err?.message ?? 'No se pudo crear la meta';
+            Alert.alert('Error al guardar', msg);
+        }
     };
 
     return (
