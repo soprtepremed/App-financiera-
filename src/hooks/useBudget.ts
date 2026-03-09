@@ -116,13 +116,21 @@ export function useBudgetSummary() {
             const totalCardPayments = (cards ?? []).reduce((sum, c) => sum + c.current_balance, 0);
 
             // Obtener metas de ahorro activas
+            // NOTA: savings_goals usa 'status' no 'is_active',
+            // y no tiene monthly_contribution — aportaciones están en savings_entries
             const { data: goals } = await supabase
                 .from('savings_goals')
-                .select('monthly_contribution')
+                .select('target_amount, current_amount')
                 .eq('user_id', user.id)
-                .eq('is_active', true);
+                .eq('status', 'active');
 
-            const totalSavings = (goals ?? []).reduce((sum, g) => sum + (g.monthly_contribution ?? 0), 0);
+            // Proyección simple de ahorro mensual:
+            // (meta_total - ahorrado) / meses restantes (estimamos 1 mes si no hay target_date)
+            const totalSavings = (goals ?? []).reduce((sum, g) => {
+                const remaining = Math.max(0, g.target_amount - g.current_amount);
+                // Dividimos entre 12 para tener una referencia mensual aproximada
+                return sum + remaining / 12;
+            }, 0);
 
             const available = totalIncome - totalExpenses - totalSavings;
 
