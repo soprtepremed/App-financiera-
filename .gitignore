@@ -1,7 +1,9 @@
-# Credenciales locales (el .env SÍ se sube al repo)
+# ⚠️  CREDENCIALES — NUNCA subir al repo
+.env
 credenciales.txt
 .env.local
 .env.production
+.env.staging
 
 # Dependencias
 node_modules/
@@ -10,6 +12,7 @@ node_modules/
 # Build
 dist/
 build/
+web-build/
 *.apk
 *.ipa
 *.aab
@@ -25,3 +28,22 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+yarn-debug.*
+yarn-error.*
+
+# Expo / React Native
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+*.pem
+*.tsbuildinfo
+
+# Generated native folders
+/ios
+/android
