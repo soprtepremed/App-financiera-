@@ -2,7 +2,7 @@
  * Profile Screen — Perfil y configuración
  * SmartWallet UI: Ionicons, labels uppercase tracking-widest, squircle geometry
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     Pressable,
     Alert,
     Platform,
+    Modal,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -27,15 +28,20 @@ export default function ProfileScreen() {
     const C = getThemeColors(isDark);
     const router = useRouter();
 
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+    /** Ejecuta el cierre de sesión */
+    const executeSignOut = async () => {
+        setShowLogoutModal(false);
+        await signOut();
+        router.replace('/(auth)/login');
+    };
+
     /** Confirma y cierra sesión */
-    const handleSignOut = async () => {
+    const handleSignOut = () => {
         if (Platform.OS === 'web') {
-            // En web, Alert.alert no renderiza botones correctamente
-            const confirmed = window.confirm('¿Estás seguro de que quieres cerrar sesión?');
-            if (confirmed) {
-                await signOut();
-                router.replace('/(auth)/login');
-            }
+            // En web usamos un modal custom en vez de window.confirm
+            setShowLogoutModal(true);
         } else {
             Alert.alert(
                 'Cerrar Sesión',
@@ -45,10 +51,7 @@ export default function ProfileScreen() {
                     {
                         text: 'Cerrar Sesión',
                         style: 'destructive',
-                        onPress: async () => {
-                            await signOut();
-                            router.replace('/(auth)/login');
-                        },
+                        onPress: executeSignOut,
                     },
                 ]
             );
@@ -131,6 +134,41 @@ export default function ProfileScreen() {
                     style={styles.signOutButton}
                 />
             </ScrollView>
+
+            {/* ── Modal de confirmación de cierre de sesión ── */}
+            <Modal
+                visible={showLogoutModal}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setShowLogoutModal(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <Pressable style={styles.modalOverlayTouchable} onPress={() => setShowLogoutModal(false)} />
+                    <View style={[styles.modalContainer, { backgroundColor: C.background.card }]}>
+                        <View style={[styles.modalIconCircle, { backgroundColor: C.iconContainer.danger }]}>
+                            <Ionicons name="log-out-outline" size={32} color={C.accent.danger} />
+                        </View>
+                        <Text style={[styles.modalTitle, { color: C.text.primary }]}>Cerrar Sesión</Text>
+                        <Text style={[styles.modalMessage, { color: C.text.secondary }]}>
+                            ¿Estás seguro de que quieres cerrar sesión? Tendrás que iniciar sesión de nuevo para acceder.
+                        </Text>
+                        <View style={styles.modalButtons}>
+                            <Pressable
+                                style={[styles.modalBtn, styles.modalBtnCancel, { borderColor: C.border.primary }]}
+                                onPress={() => setShowLogoutModal(false)}
+                            >
+                                <Text style={[styles.modalBtnText, { color: C.text.primary }]}>Cancelar</Text>
+                            </Pressable>
+                            <Pressable
+                                style={[styles.modalBtn, styles.modalBtnDanger, { backgroundColor: C.accent.danger }]}
+                                onPress={executeSignOut}
+                            >
+                                <Text style={[styles.modalBtnText, { color: '#FFFFFF' }]}>Cerrar Sesión</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </View>
     );
 }
@@ -259,5 +297,65 @@ const styles = StyleSheet.create({
     // ── Sign out ──
     signOutButton: {
         marginTop: SPACING['3xl'],
+    },
+    // ── Logout Modal ──
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalOverlayTouchable: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+    },
+    modalContainer: {
+        width: '85%',
+        maxWidth: 380,
+        borderRadius: RADIUS['2xl'],
+        padding: SPACING['2xl'],
+        alignItems: 'center',
+        ...SHADOWS.floating,
+    },
+    modalIconCircle: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+    },
+    modalTitle: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.xl,
+        marginBottom: SPACING.sm,
+    },
+    modalMessage: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.sm,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: SPACING.xl,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: SPACING.md,
+        width: '100%',
+    },
+    modalBtn: {
+        flex: 1,
+        paddingVertical: SPACING.md,
+        borderRadius: RADIUS.lg,
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 48,
+    },
+    modalBtnCancel: {
+        borderWidth: 1.5,
+    },
+    modalBtnDanger: {},
+    modalBtnText: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.md,
     },
 });
