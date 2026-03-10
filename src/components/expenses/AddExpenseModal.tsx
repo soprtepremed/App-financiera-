@@ -295,6 +295,7 @@ const styles = StyleSheet.create({
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
         paddingBottom: SPACING['2xl'],
+        overflow: 'hidden',
     },
     containerWeb: {
         alignSelf: 'center' as any,
@@ -316,7 +317,7 @@ const styles = StyleSheet.create({
     label: {
         fontFamily: TYPOGRAPHY.family.bold, fontSize: TYPOGRAPHY.size.xs,
         letterSpacing: TYPOGRAPHY.letterSpacing.widest, textTransform: 'uppercase',
-        marginBottom: SPACING.sm, marginTop: SPACING.lg, marginLeft: SPACING.xs,
+        marginBottom: SPACING.sm, marginTop: SPACING.lg,
     },
     amountContainer: {
         flexDirection: 'row', alignItems: 'center',
