@@ -35,43 +35,6 @@ function TabIcon({ name, focusedName, focused, isDark }: {
     );
 }
 
-/**
- * Botón flotante de cambio de tema — visible en TODA la app.
- * Posición: esquina superior derecha, sobre el contenido.
- */
-function ThemeToggleButton({ isDark, onToggle }: { isDark: boolean; onToggle: () => void }) {
-    const C = getThemeColors(isDark);
-
-    const handlePress = () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        onToggle();
-    };
-
-    return (
-        <Pressable
-            onPress={handlePress}
-            style={({ pressed }) => [
-                styles.themeBtn,
-                {
-                    backgroundColor: isDark
-                        ? 'rgba(255,255,255,0.10)'
-                        : 'rgba(15, 23, 42, 0.08)',
-                    borderColor: isDark
-                        ? 'rgba(255,255,255,0.15)'
-                        : 'rgba(15, 23, 42, 0.12)',
-                    opacity: pressed ? 0.75 : 1,
-                    transform: [{ scale: pressed ? 0.92 : 1 }],
-                },
-            ]}
-            accessibilityLabel={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-        >
-            {/* Ícono luna/sol */}
-            <Text style={styles.themeBtnIcon}>
-                {isDark ? '☀️' : '🌙'}
-            </Text>
-        </Pressable>
-    );
-}
 
 export default function TabsLayout() {
     const { isDark, toggle } = useThemeStore();
@@ -161,9 +124,6 @@ export default function TabsLayout() {
                     }}
                 />
             </Tabs>
-
-            {/* Botón flotante de tema — siempre visible arriba a la derecha */}
-            <ThemeToggleButton isDark={isDark} onToggle={toggle} />
         </View>
     );
 }
@@ -196,23 +156,5 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: 40,
         height: 32,
-    },
-    /** Botón flotante fijo arriba a la derecha */
-    themeBtn: {
-        position: 'absolute',
-        top: Platform.OS === 'ios' ? 56 : 16,
-        right: 16,
-        width: 42,
-        height: 42,
-        borderRadius: RADIUS.full,
-        borderWidth: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 999,
-        ...SHADOWS.md,
-    },
-    themeBtnIcon: {
-        fontSize: 20,
-        lineHeight: 24,
     },
 });

@@ -24,7 +24,7 @@ import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../src/
 
 export default function ProfileScreen() {
     const { user, profile, signOut } = useAuthStore();
-    const { isDark } = useThemeStore();
+    const { isDark, toggle } = useThemeStore();
     const C = getThemeColors(isDark);
     const router = useRouter();
 
@@ -95,6 +95,7 @@ export default function ProfileScreen() {
                         value={isDark ? 'Oscuro' : 'Claro'}
                         isDark={isDark}
                         isLast
+                        onPress={toggle}
                     />
                 </GlassCard>
 
