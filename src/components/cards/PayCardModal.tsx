@@ -3,7 +3,7 @@
  * SmartWallet UI: botones rápidos (mínimo/sin intereses/total),
  * monto custom, historial reciente de pagos. Tema reactivo.
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -49,9 +49,14 @@ export function PayCardModal({ visible, onClose, card }: PayCardModalProps) {
         }
     };
 
+    // Guard contra doble-click
+    const savingRef = useRef(false);
+
     const handlePay = async () => {
+        if (savingRef.current) return;
         const payAmount = getSelectedAmount();
         if (payAmount <= 0) { Alert.alert('Error', 'Ingresa un monto válido'); return; }
+        savingRef.current = true;
         try {
             await createPayment.mutateAsync({
                 card_id: card.id,
@@ -61,7 +66,11 @@ export function PayCardModal({ visible, onClose, card }: PayCardModalProps) {
             });
             setCustomAmount(''); setNotes('');
             onClose();
-        } catch { Alert.alert('Error', 'No se pudo registrar el pago'); }
+        } catch {
+            Alert.alert('Error', 'No se pudo registrar el pago');
+        } finally {
+            savingRef.current = false;
+        }
     };
 
     const typeLabels: Record<PaymentType, string> = {

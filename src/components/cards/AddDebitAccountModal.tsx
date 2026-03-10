@@ -2,7 +2,7 @@
  * AddDebitAccountModal - Modal para agregar/editar cuenta de débito o ahorro
  * Formulario responsivo para web y móvil.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -104,7 +104,11 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
     };
 
+    // Guard contra doble-click
+    const savingRef = useRef(false);
+
     const handleSave = async () => {
+        if (savingRef.current) return;
         const newErrors: Record<string, string> = {};
         if (!form.bank_name.trim()) newErrors.bank_name = 'Selecciona un banco';
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
@@ -112,6 +116,7 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
         // Parsear saldo desde texto
         const parsedBalance = parseAmount(balanceText);
 
+        savingRef.current = true;
         try {
             const dataToSave = { ...form, current_balance: parsedBalance };
             if (isEditing && editAccount) {
@@ -124,6 +129,8 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
         } catch (err: any) {
             const msg = err?.message ?? 'No se pudo guardar la cuenta';
             Alert.alert('Error al guardar', msg);
+        } finally {
+            savingRef.current = false;
         }
     };
 

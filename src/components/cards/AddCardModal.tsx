@@ -6,7 +6,7 @@
  * Los campos numéricos se manejan como texto puro para evitar
  * problemas con comas/puntos al escribir. Solo se parsean al guardar.
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -127,7 +127,11 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
     };
 
+    // Guard contra doble-click
+    const savingRef = useRef(false);
+
     const handleSave = async () => {
+        if (savingRef.current) return; // ya se está guardando
         const newErrors: Record<string, string> = {};
 
         // Validar texto
@@ -163,6 +167,7 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
             card_color: cardColor,
         };
 
+        savingRef.current = true;
         try {
             if (isEditing && editCard) {
                 await updateCard.mutateAsync({ id: editCard.id, ...formData });
@@ -174,6 +179,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
         } catch (err: any) {
             const msg = err?.message ?? 'No se pudo guardar la tarjeta';
             Alert.alert('Error al guardar', msg);
+        } finally {
+            savingRef.current = false;
         }
     };
 

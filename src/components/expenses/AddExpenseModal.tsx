@@ -3,7 +3,7 @@
  * SmartWallet UI: rounded-[3rem] modal, labels uppercase, indigo buttons.
  * Tema reactivo — usa useThemeStore internamente.
  */
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     View,
     Text,
@@ -59,7 +59,11 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
 
     const handleClose = () => { resetForm(); onClose(); };
 
+    // Guard contra doble-click
+    const savingRef = useRef(false);
+
     const handleSave = async () => {
+        if (savingRef.current) return;
         const numAmount = parseAmount(amount);
         if (isNaN(numAmount) || numAmount <= 0) {
             Alert.alert('Error', 'Ingresa un monto válido'); return;
@@ -67,6 +71,7 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
         if (!selectedCategory) {
             Alert.alert('Error', 'Selecciona una categoría'); return;
         }
+        savingRef.current = true;
         try {
             await createExpense.mutateAsync({
                 amount: numAmount,
@@ -80,6 +85,8 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
         } catch (err: any) {
             const msg = err?.message ?? 'No se pudo registrar el gasto';
             Alert.alert('Error al guardar', msg);
+        } finally {
+            savingRef.current = false;
         }
     };
 
