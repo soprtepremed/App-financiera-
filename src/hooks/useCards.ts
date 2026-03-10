@@ -17,7 +17,11 @@ export interface CardFormData {
     current_balance: number;
     cut_off_day: number;
     payment_due_day: number;
-    annual_interest_rate?: number;  // Opcional — el usuario no siempre lo sabe
+    /** Pago mínimo del estado de cuenta (opcional) */
+    minimum_payment?: number;
+    /** Pago para no generar intereses (opcional) */
+    no_interest_payment?: number;
+    annual_interest_rate?: number;
     card_color?: string;
 }
 

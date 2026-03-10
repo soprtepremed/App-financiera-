@@ -18,8 +18,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { GlassCard, Badge, ProgressBar, Button } from '../../src/components/ui';
 import { AddCardModal } from '../../src/components/cards/AddCardModal';
 import { PayCardModal } from '../../src/components/cards/PayCardModal';
+import { AddDebitAccountModal } from '../../src/components/cards/AddDebitAccountModal';
 import { useRouter } from 'expo-router';
 import { useCards, useDeleteCard, getDaysUntil, getCardStatus } from '../../src/hooks/useCards';
+import {
+    useDebitAccounts,
+    useDeleteDebitAccount,
+    type DebitAccount,
+} from '../../src/hooks/useDebitAccounts';
 import { formatCurrency, formatCardNumber } from '../../src/utils/formatters';
 import { useThemeStore } from '../../src/store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
@@ -30,10 +36,15 @@ export default function CardsScreen() {
     const C = getThemeColors(isDark);
     const router = useRouter();
     const { data: cards = [], isLoading, refetch, isRefetching } = useCards();
+    const { data: debitAccounts = [], refetch: refetchDebit, isRefetching: isRefetchingDebit } = useDebitAccounts();
     const deleteCard = useDeleteCard();
+    const deleteDebit = useDeleteDebitAccount();
     const [modalVisible, setModalVisible] = useState(false);
     const [editingCard, setEditingCard] = useState<CreditCard | null>(null);
     const [payingCard, setPayingCard] = useState<CreditCard | null>(null);
+    // Cuentas de débito
+    const [debitModalVisible, setDebitModalVisible] = useState(false);
+    const [editingDebit, setEditingDebit] = useState<DebitAccount | null>(null);
 
     const handleEdit = (card: CreditCard) => {
         setEditingCard(card);
@@ -60,6 +71,25 @@ export default function CardsScreen() {
         setModalVisible(true);
     };
 
+    const handleDeleteDebit = (account: DebitAccount) => {
+        Alert.alert(
+            'Eliminar Cuenta',
+            `¿Eliminar ${account.account_alias ?? account.bank_name}?`,
+            [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                    text: 'Eliminar',
+                    style: 'destructive',
+                    onPress: () => deleteDebit.mutate(account.id),
+                },
+            ]
+        );
+    };
+
+    const totalDebitBalance = debitAccounts.reduce((sum, a) => sum + a.current_balance, 0);
+    const combinedRefetching = isRefetching || isRefetchingDebit;
+    const onRefresh = () => { refetch(); refetchDebit(); };
+
     return (
         <View style={[styles.screen, { backgroundColor: C.background.primary }]}>
             <StatusBar style={isDark ? 'light' : 'dark'} />
@@ -78,7 +108,7 @@ export default function CardsScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
                 refreshControl={
-                    <RefreshControl refreshing={isRefetching} onRefresh={refetch}
+                    <RefreshControl refreshing={combinedRefetching} onRefresh={onRefresh}
                         tintColor={C.accent.primary} />
                 }
             >
@@ -108,10 +138,87 @@ export default function CardsScreen() {
                     />
                 ))}
 
+                {/* ── Sección: Cuentas de Débito / Ahorro ── */}
+                <View style={styles.sectionHeader}>
+                    <View>
+                        <Text style={[styles.sectionTitle, { color: C.text.primary }]}>Cuentas de Débito</Text>
+                        {debitAccounts.length > 0 && (
+                            <Text style={[styles.sectionSub, { color: C.accent.success }]}>
+                                Total: {formatCurrency(totalDebitBalance)}
+                            </Text>
+                        )}
+                    </View>
+                    <Pressable
+                        onPress={() => { setEditingDebit(null); setDebitModalVisible(true); }}
+                        style={[styles.addBtnSmall, { backgroundColor: C.accent.success }]}
+                    >
+                        <Ionicons name="add" size={16} color="#FFF" />
+                        <Text style={styles.addBtnSmallText}>Agregar</Text>
+                    </Pressable>
+                </View>
+
+                {debitAccounts.length === 0 && (
+                    <GlassCard variant="default" padding="lg" style={styles.emptyDebitCard}>
+                        <Ionicons name="wallet-outline" size={36} color={C.text.tertiary} />
+                        <Text style={[styles.emptyDebitText, { color: C.text.tertiary }]}>
+                            Agrega tus cuentas de débito o ahorro para llevar el control de tu dinero disponible.
+                        </Text>
+                    </GlassCard>
+                )}
+
+                {debitAccounts.map((account, index) => (
+                    <Animated.View key={account.id} entering={FadeInDown.duration(400).delay(index * 80)}>
+                        <GlassCard variant="default" padding="lg" style={styles.debitCard}>
+                            <View style={styles.debitHeader}>
+                                <View style={[styles.debitIconBox, { backgroundColor: `${account.account_color ?? '#10B981'}20` }]}>
+                                    <Ionicons
+                                        name={account.account_type === 'savings' ? 'cash-outline' : account.account_type === 'investment' ? 'trending-up-outline' : 'card-outline'}
+                                        size={20}
+                                        color={account.account_color ?? '#10B981'}
+                                    />
+                                </View>
+                                <View style={styles.debitInfo}>
+                                    <Text style={[styles.debitBank, { color: C.text.primary }]}>
+                                        {account.account_alias ?? account.bank_name}
+                                    </Text>
+                                    {account.last_four_digits ? (
+                                        <Text style={[styles.debitDigits, { color: C.text.tertiary }]}>
+                                            {account.bank_name} •••• {account.last_four_digits}
+                                        </Text>
+                                    ) : (
+                                        <Text style={[styles.debitDigits, { color: C.text.tertiary }]}>
+                                            {account.bank_name} • {account.account_type === 'savings' ? 'Ahorro' : account.account_type === 'investment' ? 'Inversión' : 'Débito'}
+                                        </Text>
+                                    )}
+                                </View>
+                                <Text style={[styles.debitBalance, { color: C.accent.success }]}>
+                                    {formatCurrency(account.current_balance)}
+                                </Text>
+                            </View>
+                            <View style={[styles.debitActions, { borderTopColor: C.border.secondary }]}>
+                                <Pressable
+                                    style={styles.debitActionBtn}
+                                    onPress={() => { setEditingDebit(account); setDebitModalVisible(true); }}
+                                >
+                                    <Ionicons name="create-outline" size={14} color={C.text.secondary} />
+                                    <Text style={[styles.debitActionText, { color: C.text.secondary }]}>Editar</Text>
+                                </Pressable>
+                                <Pressable
+                                    style={styles.debitActionBtn}
+                                    onPress={() => handleDeleteDebit(account)}
+                                >
+                                    <Ionicons name="trash-outline" size={14} color={C.accent.danger} />
+                                    <Text style={[styles.debitActionText, { color: C.accent.danger }]}>Eliminar</Text>
+                                </Pressable>
+                            </View>
+                        </GlassCard>
+                    </Animated.View>
+                ))}
+
                 <View style={styles.bottomSpacer} />
             </ScrollView>
 
-            {/* Modal de agregar/editar */}
+            {/* Modal de agregar/editar tarjeta crédito */}
             <AddCardModal
                 visible={modalVisible}
                 onClose={() => setModalVisible(false)}
@@ -126,6 +233,13 @@ export default function CardsScreen() {
                     card={payingCard}
                 />
             )}
+
+            {/* Modal de agregar/editar cuenta débito */}
+            <AddDebitAccountModal
+                visible={debitModalVisible}
+                onClose={() => setDebitModalVisible(false)}
+                editAccount={editingDebit}
+            />
         </View>
     );
 }
@@ -386,4 +500,90 @@ const styles = StyleSheet.create({
         fontSize: TYPOGRAPHY.size.sm,
     },
     bottomSpacer: { height: 20 },
+    // ── Sección de Débito ──
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: SPACING['2xl'],
+        marginBottom: SPACING.md,
+    },
+    sectionTitle: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.xl,
+        letterSpacing: TYPOGRAPHY.letterSpacing.tight,
+    },
+    sectionSub: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.sm,
+        marginTop: 2,
+    },
+    addBtnSmall: {
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.xs,
+        borderRadius: RADIUS.lg,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+    },
+    addBtnSmallText: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.xs,
+        color: '#FFFFFF',
+        textTransform: 'uppercase',
+    },
+    emptyDebitCard: {
+        alignItems: 'center',
+        gap: SPACING.sm,
+    },
+    emptyDebitText: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.sm,
+        textAlign: 'center',
+    },
+    debitCard: { marginBottom: SPACING.sm },
+    debitHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.md,
+    },
+    debitIconBox: {
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.lg,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    debitInfo: { flex: 1 },
+    debitBank: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.md,
+    },
+    debitDigits: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.xs,
+        marginTop: 2,
+    },
+    debitBalance: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.lg,
+    },
+    debitActions: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: SPACING.lg,
+        marginTop: SPACING.md,
+        paddingTop: SPACING.sm,
+        borderTopWidth: 1,
+    },
+    debitActionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        padding: SPACING.xs,
+    },
+    debitActionText: {
+        fontFamily: TYPOGRAPHY.family.medium,
+        fontSize: TYPOGRAPHY.size.xs,
+    },
 });

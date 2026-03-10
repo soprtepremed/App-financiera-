@@ -1,6 +1,7 @@
 /**
  * AddCardModal - Modal para agregar/editar tarjeta de crédito
- * Formulario con validación y estética glass. Tema reactivo.
+ * Formulario completo con validación, pago mínimo/sin intereses,
+ * y UI responsiva que funciona correctamente en web y móvil.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -12,6 +13,8 @@ import {
     ScrollView,
     KeyboardAvoidingView,
     Platform,
+    useWindowDimensions,
+    Alert,
 } from 'react-native';
 import { Button, Input, GlassCard } from '../ui';
 import { useCreateCard, useUpdateCard, type CardFormData } from '../../hooks/useCards';
@@ -45,6 +48,7 @@ interface Props {
 export function AddCardModal({ visible, onClose, editCard }: Props) {
     const { isDark } = useThemeStore();
     const C = getThemeColors(isDark);
+    const { height: windowHeight } = useWindowDimensions();
     const createCard = useCreateCard();
     const updateCard = useUpdateCard();
     const isEditing = !!editCard;
@@ -58,6 +62,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
         current_balance: 0,
         cut_off_day: 1,
         payment_due_day: 20,
+        minimum_payment: 0,
+        no_interest_payment: 0,
         card_color: '#6C63FF',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -73,6 +79,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                 current_balance: editCard.current_balance,
                 cut_off_day: editCard.cut_off_day,
                 payment_due_day: editCard.payment_due_day,
+                minimum_payment: (editCard as any).minimum_payment ?? 0,
+                no_interest_payment: (editCard as any).no_interest_payment ?? 0,
                 card_color: editCard.card_color ?? '#6C63FF',
             });
         } else {
@@ -84,7 +92,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
         setForm({
             bank_name: '', card_alias: '', last_four_digits: '',
             credit_limit: 0, current_balance: 0, cut_off_day: 1,
-            payment_due_day: 20, card_color: '#6C63FF',
+            payment_due_day: 20, minimum_payment: 0, no_interest_payment: 0,
+            card_color: '#6C63FF',
         });
         setErrors({});
     };
@@ -115,31 +124,51 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
             resetForm();
             onClose();
         } catch (err: any) {
-            setErrors({ general: err.message });
+            const msg = err?.message ?? 'No se pudo guardar la tarjeta';
+            Alert.alert('Error al guardar', msg);
         }
     };
 
     const isLoading = createCard.isPending || updateCard.isPending;
 
+    /**
+     * Altura máxima del modal:
+     * - En web usamos un porcentaje del viewport real
+     * - En móvil dejamos el 90% estándar
+     */
+    const modalMaxHeight = Platform.OS === 'web'
+        ? Math.min(windowHeight * 0.85, 700)
+        : '90%';
+
     return (
         <Modal visible={visible} animationType="slide" transparent>
             <View style={styles.overlay}>
+                <Pressable style={styles.overlayTouchable} onPress={onClose} />
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.keyboardView}
                 >
-                    <View style={[styles.container, { backgroundColor: C.background.secondary }]}>
+                    <View style={[
+                        styles.container,
+                        { backgroundColor: C.background.secondary, maxHeight: modalMaxHeight },
+                        // En web: centrar horizontalmente con ancho máximo
+                        Platform.OS === 'web' && styles.containerWeb,
+                    ]}>
                         {/* Header */}
                         <View style={styles.header}>
                             <Text style={[styles.title, { color: C.text.primary }]}>
                                 {isEditing ? 'Editar Tarjeta' : 'Nueva Tarjeta'}
                             </Text>
-                            <Pressable onPress={onClose}>
+                            <Pressable onPress={onClose} hitSlop={12}>
                                 <Text style={[styles.closeBtn, { color: C.text.tertiary }]}>✕</Text>
                             </Pressable>
                         </View>
 
-                        <ScrollView showsVerticalScrollIndicator={false}>
+                        <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={styles.scrollContent}
+                        >
                             {errors.general && (
                                 <View style={[styles.errorBanner, { backgroundColor: `${C.accent.danger}18` }]}>
                                     <Text style={[styles.errorText, { color: C.accent.danger }]}>
@@ -213,6 +242,7 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />
 
+                            {/* Fechas de corte y pago */}
                             <View style={styles.row}>
                                 <View style={styles.halfInput}>
                                     <Input
@@ -238,6 +268,37 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                 </View>
                             </View>
 
+                            {/* ── Pagos del estado de cuenta ── */}
+                            <Text style={[styles.sectionLabel, { color: C.text.primary }]}>
+                                Pagos (Estado de Cuenta)
+                            </Text>
+                            <Text style={[styles.sectionHint, { color: C.text.tertiary }]}>
+                                Estos datos los encuentras en tu estado de cuenta mensual
+                            </Text>
+
+                            <View style={styles.row}>
+                                <View style={styles.halfInput}>
+                                    <Input
+                                        label="Pago Mínimo"
+                                        placeholder="0"
+                                        value={(form.minimum_payment ?? 0) > 0 ? String(form.minimum_payment) : ''}
+                                        onChangeText={(v) => updateField('minimum_payment', parseFloat(v) || 0)}
+                                        keyboardType="decimal-pad"
+                                        leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
+                                    />
+                                </View>
+                                <View style={styles.halfInput}>
+                                    <Input
+                                        label="Pago sin Intereses"
+                                        placeholder="0"
+                                        value={(form.no_interest_payment ?? 0) > 0 ? String(form.no_interest_payment) : ''}
+                                        onChangeText={(v) => updateField('no_interest_payment', parseFloat(v) || 0)}
+                                        keyboardType="decimal-pad"
+                                        leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
+                                    />
+                                </View>
+                            </View>
+
                             <Button
                                 title={isEditing ? 'Guardar Cambios' : 'Agregar Tarjeta'}
                                 onPress={handleSave}
@@ -256,13 +317,36 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    keyboardView: { flex: 1, justifyContent: 'flex-end' },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'flex-end',
+    },
+    /** Zona tocable para cerrar al hacer tap fuera */
+    overlayTouchable: {
+        flex: 1,
+    },
+    keyboardView: {
+        // No usar flex:1 aquí — permite que el container crezca solo lo que necesite
+        justifyContent: 'flex-end',
+    },
     container: {
         borderTopLeftRadius: RADIUS['2xl'],
         borderTopRightRadius: RADIUS['2xl'],
-        padding: SPACING.xl,
-        maxHeight: '90%',
+        paddingTop: SPACING.xl,
+        paddingHorizontal: SPACING.xl,
+        // En móvil el maxHeight se aplica inline
+    },
+    /** En web: centrar y limitar ancho para que no se estire en desktop */
+    containerWeb: {
+        alignSelf: 'center' as any,
+        width: '100%',
+        maxWidth: 500,
+        borderBottomLeftRadius: RADIUS['2xl'],
+        borderBottomRightRadius: RADIUS['2xl'],
+    },
+    scrollContent: {
+        paddingBottom: SPACING['3xl'],
     },
     header: {
         flexDirection: 'row', justifyContent: 'space-between',
@@ -274,6 +358,17 @@ const styles = StyleSheet.create({
         fontFamily: TYPOGRAPHY.family.medium,
         fontSize: TYPOGRAPHY.size.sm,
         marginBottom: SPACING.sm,
+    },
+    sectionLabel: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.md,
+        marginTop: SPACING.sm,
+        marginBottom: SPACING.xs,
+    },
+    sectionHint: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.xs,
+        marginBottom: SPACING.md,
     },
     bankRow: { marginBottom: SPACING.md, flexGrow: 0 },
     bankChip: {
@@ -292,5 +387,5 @@ const styles = StyleSheet.create({
     halfInput: { flex: 1 },
     errorBanner: { borderRadius: RADIUS.sm, padding: SPACING.md, marginBottom: SPACING.lg },
     errorText: { fontFamily: TYPOGRAPHY.family.medium, fontSize: TYPOGRAPHY.size.sm, textAlign: 'center' },
-    saveButton: { marginTop: SPACING.lg, marginBottom: SPACING['2xl'] },
+    saveButton: { marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });

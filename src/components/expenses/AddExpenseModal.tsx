@@ -16,6 +16,7 @@ import {
     Alert,
     KeyboardAvoidingView,
     Platform,
+    useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryPicker } from './CategoryPicker';
@@ -81,14 +82,24 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
         }
     };
 
+    const { height: windowHeight } = useWindowDimensions();
+    const modalMaxHeight = Platform.OS === 'web'
+        ? Math.min(windowHeight * 0.85, 700)
+        : '90%';
+
     return (
         <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
             <View style={styles.overlay}>
+                <Pressable style={styles.overlayTouchable} onPress={handleClose} />
                 <KeyboardAvoidingView
-                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}
                     style={styles.keyboardView}
                 >
-                    <View style={[styles.modalContainer, { backgroundColor: C.background.card }]}>
+                    <View style={[
+                        styles.modalContainer,
+                        { backgroundColor: C.background.card, maxHeight: modalMaxHeight },
+                        Platform.OS === 'web' && styles.containerWeb,
+                    ]}>
                         {/* ── Header ── */}
                         <View style={styles.header}>
                             <Text style={[styles.headerTitle, { color: C.text.primary }]}>Nuevo Gasto</Text>
@@ -268,14 +279,21 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
 
 const styles = StyleSheet.create({
     overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    keyboardView: { flex: 1, justifyContent: 'flex-end' },
+    overlayTouchable: { flex: 1 },
+    keyboardView: { justifyContent: 'flex-end' },
     modalContainer: {
         borderTopLeftRadius: RADIUS['4xl'],
         borderTopRightRadius: RADIUS['4xl'],
-        maxHeight: '90%',
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
         paddingBottom: SPACING['2xl'],
+    },
+    containerWeb: {
+        alignSelf: 'center' as any,
+        width: '100%',
+        maxWidth: 500,
+        borderBottomLeftRadius: RADIUS['2xl'],
+        borderBottomRightRadius: RADIUS['2xl'],
     },
     header: {
         flexDirection: 'row', justifyContent: 'space-between',
