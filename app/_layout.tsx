@@ -41,18 +41,49 @@ function useProtectedRoute() {
     const segments = useSegments();
     const router = useRouter();
 
-    // ── Re-check post-OAuth ──
+    // ── Re-check post-OAuth: parsear hash fragment (#access_token=...) ──
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
         const hash = window.location.hash;
-        if (hash && hash.includes('access_token')) {
-            const timer = setTimeout(async () => {
-                const { data } = await supabase.auth.getSession();
-                if (data.session) setSession(data.session);
-            }, 500);
-            return () => clearTimeout(timer);
-        }
+        if (!hash || !hash.includes('access_token')) return;
+
+        // Parsear los tokens directamente del hash
+        const params = new URLSearchParams(hash.substring(1));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+
+        if (!accessToken || !refreshToken) return;
+
+        const restoreSession = async () => {
+            try {
+                // Establecer la sesión con los tokens del hash
+                const { data, error } = await supabase.auth.setSession({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                });
+
+                if (error) {
+                    console.error('Error restaurando sesión OAuth:', error.message);
+                    return;
+                }
+
+                if (data.session) {
+                    setSession(data.session);
+
+                    // Cargar perfil del usuario
+                    const { fetchProfile } = useAuthStore.getState();
+                    await fetchProfile();
+                }
+
+                // Limpiar el hash de la URL para que no se vuelva a procesar
+                window.history.replaceState(null, '', window.location.pathname);
+            } catch (err) {
+                console.error('Error en callback OAuth:', err);
+            }
+        };
+
+        restoreSession();
     }, []);
 
     // ── Protección de rutas ──
