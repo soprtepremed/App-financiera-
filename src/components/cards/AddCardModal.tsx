@@ -281,16 +281,25 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary }]}>
+                                El monto máximo que el banco te permite gastar con esta tarjeta.
+                            </Text>
                             <Input
-                                label="Saldo actual"
+                                label="Saldo actual (lo que debes)"
                                 placeholder="0"
                                 value={nums.current_balance}
                                 onChangeText={(v) => updateNum('current_balance', v)}
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary }]}>
+                                Tu deuda actual: la cantidad total que debes pagar al banco este mes.
+                            </Text>
 
                             {/* Fechas de corte y pago */}
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary, marginBottom: SPACING.sm }]}>
+                                📅 Corte: día en que el banco calcula tu deuda. Pago: fecha límite para pagar.
+                            </Text>
                             <View style={styles.row}>
                                 <View style={styles.halfInput}>
                                     <Input
@@ -321,7 +330,7 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                 Pagos (Estado de Cuenta)
                             </Text>
                             <Text style={[styles.sectionHint, { color: C.text.tertiary }]}>
-                                Estos datos los encuentras en tu estado de cuenta mensual
+                                Estos datos los encuentras en tu estado de cuenta mensual. ¡Revisa tu app bancaria!
                             </Text>
 
                             <View style={styles.row}>
@@ -346,6 +355,9 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                     />
                                 </View>
                             </View>
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary }]}>
+                                Mínimo: lo mínimo para no caer en mora.{"\n"}Sin intereses: págalo para no generar intereses ordinarios.
+                            </Text>
 
                             <Button
                                 title={isEditing ? 'Guardar Cambios' : 'Agregar Tarjeta'}
@@ -398,6 +410,13 @@ const styles = StyleSheet.create({
     bankChipText: { fontFamily: TYPOGRAPHY.family.medium, fontSize: TYPOGRAPHY.size.sm },
     fieldError: { fontFamily: TYPOGRAPHY.family.regular, fontSize: TYPOGRAPHY.size.xs, marginTop: -SPACING.sm, marginBottom: SPACING.md },
     inputIcon: { fontFamily: TYPOGRAPHY.family.semibold, fontSize: 16 },
+    fieldHint: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.xs - 1,
+        marginTop: -SPACING.xs,
+        marginBottom: SPACING.md,
+        lineHeight: 16,
+    },
     row: { flexDirection: 'row', gap: SPACING.md },
     halfInput: { flex: 1 },
     errorBanner: { borderRadius: RADIUS.sm, padding: SPACING.md, marginBottom: SPACING.lg },

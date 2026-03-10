@@ -195,6 +195,9 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
                                     </Pressable>
                                 ))}
                             </View>
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary }]}>
+                                Débito: cuenta para gastos diarios. Ahorro: dinero guardado. Inversión: fondos en plataformas.
+                            </Text>
 
                             {/* Selector de banco */}
                             <Text style={[styles.label, { color: C.text.secondary }]}>Banco</Text>
@@ -248,6 +251,9 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />
+                            <Text style={[styles.fieldHint, { color: C.text.tertiary }]}>
+                                El dinero que tienes disponible ahora en esta cuenta. Consúltalo en tu app bancaria.
+                            </Text>
 
                             <Button
                                 title={isEditing ? 'Guardar Cambios' : 'Agregar Cuenta'}
@@ -315,5 +321,12 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     inputIcon: { fontFamily: TYPOGRAPHY.family.semibold, fontSize: 16 },
+    fieldHint: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.xs - 1,
+        marginTop: -SPACING.xs,
+        marginBottom: SPACING.md,
+        lineHeight: 16,
+    },
     saveButton: { marginTop: SPACING.lg, marginBottom: SPACING.xl },
 });

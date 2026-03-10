@@ -77,7 +77,7 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
                 amount: numAmount,
                 description: description.trim() || 'Sin descripción',
                 category_id: selectedCategory.id,
-                card_id: selectedCardId ?? '',
+                card_id: selectedCardId || null,
                 expense_date: new Date().toISOString().split('T')[0],
                 is_recurring: isRecurring,
             });

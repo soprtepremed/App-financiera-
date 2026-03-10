@@ -123,11 +123,17 @@ export function useCreateExpense() {
         mutationFn: async (formData: ExpenseFormData) => {
             if (!user) throw new Error('No autenticado');
 
+            // Sanitizar card_id: '' → null (FK requiere UUID o NULL)
+            const cleanData = {
+                ...formData,
+                card_id: formData.card_id || null,
+            };
+
             const { data, error } = await supabase
                 .from('expenses')
                 .insert({
                     user_id: user.id,
-                    ...formData,
+                    ...cleanData,
                 })
                 .select()
                 .single();

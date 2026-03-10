@@ -43,8 +43,12 @@ export default function DashboardScreen() {
     const greeting = getGreeting();
     const firstName = getFirstName(profile?.full_name ?? null);
 
-    // Calcular balance total (suma de saldos de tarjetas)
+    // Calcular balance total (suma de saldos de tarjetas = lo que debes)
     const totalBalance = cards.reduce((sum, c) => sum + c.current_balance, 0);
+    // Límite total y crédito disponible
+    const totalLimit = cards.reduce((sum, c) => sum + c.credit_limit, 0);
+    const totalAvailable = totalLimit - totalBalance;
+    const usagePercent = totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : 0;
 
     // Próximos pagos (tarjetas con menos de 10 días para pago)
     const upcomingPayments = cards
@@ -96,10 +100,37 @@ export default function DashboardScreen() {
                             size="hero"
                             color={C.text.primary}
                         />
+
+                        {/* Info complementaria: crédito disponible y límite */}
+                        {cards.length > 0 && (
+                            <View style={styles.balanceDetails}>
+                                <View style={styles.balanceDetailItem}>
+                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Disponible</Text>
+                                    <Text style={[styles.balanceDetailValue, { color: C.accent.success }]}>
+                                        {formatCurrency(totalAvailable, false)}
+                                    </Text>
+                                </View>
+                                <View style={[styles.balanceDetailDivider, { backgroundColor: C.border.secondary }]} />
+                                <View style={styles.balanceDetailItem}>
+                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Límite total</Text>
+                                    <Text style={[styles.balanceDetailValue, { color: C.text.secondary }]}>
+                                        {formatCurrency(totalLimit, false)}
+                                    </Text>
+                                </View>
+                                <View style={[styles.balanceDetailDivider, { backgroundColor: C.border.secondary }]} />
+                                <View style={styles.balanceDetailItem}>
+                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Uso</Text>
+                                    <Text style={[styles.balanceDetailValue, { color: usagePercent > 70 ? C.accent.danger : usagePercent > 40 ? C.accent.warning : C.accent.success }]}>
+                                        {usagePercent}%
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
                         {summary && summary.totalIncome > 0 && (
                             <View style={styles.balanceChange}>
                                 <Badge
-                                    text={`Disponible: ${formatCurrency(summary.available)}`}
+                                    text={`Presupuesto disponible: ${formatCurrency(summary.available)}`}
                                     variant={summary.available >= 0 ? 'success' : 'danger'}
                                     size="sm"
                                 />
@@ -371,6 +402,36 @@ const styles = StyleSheet.create({
         fontSize: TYPOGRAPHY.size.xs,
         letterSpacing: TYPOGRAPHY.letterSpacing.widest,
         textTransform: 'uppercase',
+    },
+    // ── Balance details ──
+    balanceDetails: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        marginTop: SPACING.lg,
+        paddingTop: SPACING.md,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.1)',
+    },
+    balanceDetailItem: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    balanceDetailLabel: {
+        fontFamily: TYPOGRAPHY.family.regular,
+        fontSize: TYPOGRAPHY.size.xs,
+        textTransform: 'uppercase' as const,
+        letterSpacing: 0.5,
+        marginBottom: 4,
+    },
+    balanceDetailValue: {
+        fontFamily: TYPOGRAPHY.family.bold,
+        fontSize: TYPOGRAPHY.size.md,
+    },
+    balanceDetailDivider: {
+        width: 1,
+        height: 30,
+        opacity: 0.3,
     },
     // ── Cards carousel ──
     cardsCarousel: {
