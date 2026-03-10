@@ -5,6 +5,8 @@
 
 /**
  * Formatea un número como moneda MXN.
+ * Usa formateo manual para garantizar consistencia entre
+ * plataformas (móvil, web, iOS, Android).
  * @example formatCurrency(24850) → "$24,850.00"
  * @example formatCurrency(24850, false) → "$24,850"
  */
@@ -12,12 +14,15 @@ export function formatCurrency(
     amount: number,
     showDecimals: boolean = true
 ): string {
-    return amount.toLocaleString('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: showDecimals ? 2 : 0,
-        maximumFractionDigits: showDecimals ? 2 : 0,
-    });
+    const absAmount = Math.abs(amount);
+    const sign = amount < 0 ? '-' : '';
+
+    // Formatear con separador de miles y decimales opcionales
+    const parts = absAmount.toFixed(showDecimals ? 2 : 0).split('.');
+    const integerPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const decimalPart = parts[1] ? `.${parts[1]}` : '';
+
+    return `${sign}$${integerPart}${decimalPart}`;
 }
 
 /**
