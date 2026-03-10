@@ -10,6 +10,7 @@ import {
     ScrollView,
     Pressable,
     Alert,
+    Platform,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter } from 'expo-router';
@@ -27,19 +28,31 @@ export default function ProfileScreen() {
     const router = useRouter();
 
     /** Confirma y cierra sesión */
-    const handleSignOut = () => {
-        Alert.alert(
-            'Cerrar Sesión',
-            '¿Estás seguro de que quieres cerrar sesión?',
-            [
-                { text: 'Cancelar', style: 'cancel' },
-                {
-                    text: 'Cerrar Sesión',
-                    style: 'destructive',
-                    onPress: signOut,
-                },
-            ]
-        );
+    const handleSignOut = async () => {
+        if (Platform.OS === 'web') {
+            // En web, Alert.alert no renderiza botones correctamente
+            const confirmed = window.confirm('¿Estás seguro de que quieres cerrar sesión?');
+            if (confirmed) {
+                await signOut();
+                router.replace('/(auth)/login');
+            }
+        } else {
+            Alert.alert(
+                'Cerrar Sesión',
+                '¿Estás seguro de que quieres cerrar sesión?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Cerrar Sesión',
+                        style: 'destructive',
+                        onPress: async () => {
+                            await signOut();
+                            router.replace('/(auth)/login');
+                        },
+                    },
+                ]
+            );
+        }
     };
 
     const displayName = profile?.full_name ?? user?.email ?? 'Usuario';
