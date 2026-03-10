@@ -25,6 +25,7 @@ import { useCreateExpense } from '../../hooks/useExpenses';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import type { ExpenseCategory, CreditCard } from '../../types/database';
+import { parseAmount } from '../../utils/formatters';
 
 interface Props {
     visible: boolean;
@@ -59,7 +60,7 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
     const handleClose = () => { resetForm(); onClose(); };
 
     const handleSave = async () => {
-        const numAmount = parseFloat(amount);
+        const numAmount = parseAmount(amount);
         if (isNaN(numAmount) || numAmount <= 0) {
             Alert.alert('Error', 'Ingresa un monto válido'); return;
         }

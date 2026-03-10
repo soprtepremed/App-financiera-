@@ -26,7 +26,7 @@ import {
     useDeleteIncome,
     type IncomeFormData,
 } from '../../src/hooks/useBudget';
-import { formatCurrency } from '../../src/utils/formatters';
+import { formatCurrency, parseAmount } from '../../src/utils/formatters';
 import { useThemeStore } from '../../src/store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../../src/constants/theme';
 
@@ -223,12 +223,12 @@ function AddIncomeModal({ visible, onClose, isDark }: {
     const [frequency, setFrequency] = useState<'weekly' | 'biweekly' | 'monthly'>('monthly');
 
     const handleSave = async () => {
-        if (!name.trim() || !amount || parseFloat(amount) <= 0) return;
+        if (!name.trim() || !amount || parseAmount(amount) <= 0) return;
 
         try {
             await createIncome.mutateAsync({
                 name: name.trim(),      // columna 'name' en la tabla income_sources
-                amount: parseFloat(amount),
+                amount: parseAmount(amount),
                 frequency,
             });
             setName('');

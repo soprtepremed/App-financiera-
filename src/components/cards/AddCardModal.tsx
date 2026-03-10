@@ -2,6 +2,9 @@
  * AddCardModal - Modal para agregar/editar tarjeta de crédito
  * Formulario completo con validación, pago mínimo/sin intereses,
  * y UI responsiva que funciona correctamente en web y móvil.
+ *
+ * Los campos numéricos se manejan como texto puro para evitar
+ * problemas con comas/puntos al escribir. Solo se parsean al guardar.
  */
 import React, { useState, useEffect } from 'react';
 import {
@@ -19,6 +22,7 @@ import {
 import { Button, Input, GlassCard } from '../ui';
 import { useCreateCard, useUpdateCard, type CardFormData } from '../../hooks/useCards';
 import { validateRequired, validateLastFourDigits } from '../../utils/validators';
+import { parseAmount } from '../../utils/formatters';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 import type { CreditCard } from '../../types/database';
@@ -39,6 +43,20 @@ const BANK_COLORS: Record<string, string> = {
     'Otro': '#6C63FF',
 };
 
+/**
+ * Estado de texto para campos numéricos.
+ * Se mantiene como string puro mientras el usuario escribe,
+ * y solo se parsea a número al momento de guardar.
+ */
+interface NumericFields {
+    credit_limit: string;
+    current_balance: string;
+    cut_off_day: string;
+    payment_due_day: string;
+    minimum_payment: string;
+    no_interest_payment: string;
+}
+
 interface Props {
     visible: boolean;
     onClose: () => void;
@@ -53,35 +71,38 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
     const updateCard = useUpdateCard();
     const isEditing = !!editCard;
 
-    // ── Estado del formulario ──
-    const [form, setForm] = useState<CardFormData>({
-        bank_name: '',
-        card_alias: '',
-        last_four_digits: '',
-        credit_limit: 0,
-        current_balance: 0,
-        cut_off_day: 1,
-        payment_due_day: 20,
-        minimum_payment: 0,
-        no_interest_payment: 0,
-        card_color: '#6C63FF',
+    // ── Estado del formulario (texto) ──
+    const [bankName, setBankName] = useState('');
+    const [cardAlias, setCardAlias] = useState('');
+    const [lastFour, setLastFour] = useState('');
+    const [cardColor, setCardColor] = useState('#6C63FF');
+
+    // Campos numéricos como TEXTO puro
+    const [nums, setNums] = useState<NumericFields>({
+        credit_limit: '',
+        current_balance: '',
+        cut_off_day: '1',
+        payment_due_day: '20',
+        minimum_payment: '',
+        no_interest_payment: '',
     });
+
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Pre-llenar si es edición
     useEffect(() => {
         if (editCard) {
-            setForm({
-                bank_name: editCard.bank_name,
-                card_alias: editCard.card_alias ?? '',
-                last_four_digits: editCard.last_four_digits,
-                credit_limit: editCard.credit_limit,
-                current_balance: editCard.current_balance,
-                cut_off_day: editCard.cut_off_day,
-                payment_due_day: editCard.payment_due_day,
-                minimum_payment: (editCard as any).minimum_payment ?? 0,
-                no_interest_payment: (editCard as any).no_interest_payment ?? 0,
-                card_color: editCard.card_color ?? '#6C63FF',
+            setBankName(editCard.bank_name);
+            setCardAlias(editCard.card_alias ?? '');
+            setLastFour(editCard.last_four_digits);
+            setCardColor(editCard.card_color ?? '#6C63FF');
+            setNums({
+                credit_limit: editCard.credit_limit > 0 ? String(editCard.credit_limit) : '',
+                current_balance: editCard.current_balance > 0 ? String(editCard.current_balance) : '',
+                cut_off_day: String(editCard.cut_off_day),
+                payment_due_day: String(editCard.payment_due_day),
+                minimum_payment: (editCard as any).minimum_payment > 0 ? String((editCard as any).minimum_payment) : '',
+                no_interest_payment: (editCard as any).no_interest_payment > 0 ? String((editCard as any).no_interest_payment) : '',
             });
         } else {
             resetForm();
@@ -89,37 +110,64 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
     }, [editCard, visible]);
 
     const resetForm = () => {
-        setForm({
-            bank_name: '', card_alias: '', last_four_digits: '',
-            credit_limit: 0, current_balance: 0, cut_off_day: 1,
-            payment_due_day: 20, minimum_payment: 0, no_interest_payment: 0,
-            card_color: '#6C63FF',
+        setBankName(''); setCardAlias(''); setLastFour('');
+        setCardColor('#6C63FF');
+        setNums({
+            credit_limit: '', current_balance: '',
+            cut_off_day: '1', payment_due_day: '20',
+            minimum_payment: '', no_interest_payment: '',
         });
         setErrors({});
     };
 
-    const updateField = (field: keyof CardFormData, value: string | number) => {
-        setForm(prev => ({ ...prev, [field]: value }));
+    const updateNum = (field: keyof NumericFields, value: string) => {
+        // Solo permitir dígitos, puntos y comas
+        const clean = value.replace(/[^0-9.,]/g, '');
+        setNums(prev => ({ ...prev, [field]: clean }));
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
     };
 
     const handleSave = async () => {
         const newErrors: Record<string, string> = {};
-        const bankVal = validateRequired(form.bank_name, 'El banco');
+
+        // Validar texto
+        const bankVal = validateRequired(bankName, 'El banco');
         if (!bankVal.isValid) newErrors.bank_name = bankVal.error!;
-        const digitsVal = validateLastFourDigits(form.last_four_digits);
+        const digitsVal = validateLastFourDigits(lastFour);
         if (!digitsVal.isValid) newErrors.last_four_digits = digitsVal.error!;
-        if (form.credit_limit <= 0) newErrors.credit_limit = 'Ingresa un límite válido';
-        if (form.cut_off_day < 1 || form.cut_off_day > 31) newErrors.cut_off_day = 'Día 1-31';
-        if (form.payment_due_day < 1 || form.payment_due_day > 31) newErrors.payment_due_day = 'Día 1-31';
+
+        // Parsear numéricos al guardar
+        const creditLimit = parseAmount(nums.credit_limit);
+        const currentBalance = parseAmount(nums.current_balance);
+        const cutOff = parseInt(nums.cut_off_day) || 0;
+        const paymentDay = parseInt(nums.payment_due_day) || 0;
+        const minPayment = parseAmount(nums.minimum_payment);
+        const noInterest = parseAmount(nums.no_interest_payment);
+
+        if (creditLimit <= 0) newErrors.credit_limit = 'Ingresa un límite válido';
+        if (cutOff < 1 || cutOff > 31) newErrors.cut_off_day = 'Día 1-31';
+        if (paymentDay < 1 || paymentDay > 31) newErrors.payment_due_day = 'Día 1-31';
 
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
+        const formData: CardFormData = {
+            bank_name: bankName,
+            card_alias: cardAlias,
+            last_four_digits: lastFour,
+            credit_limit: creditLimit,
+            current_balance: currentBalance,
+            cut_off_day: cutOff,
+            payment_due_day: paymentDay,
+            minimum_payment: minPayment,
+            no_interest_payment: noInterest,
+            card_color: cardColor,
+        };
+
         try {
             if (isEditing && editCard) {
-                await updateCard.mutateAsync({ id: editCard.id, ...form });
+                await updateCard.mutateAsync({ id: editCard.id, ...formData });
             } else {
-                await createCard.mutateAsync(form);
+                await createCard.mutateAsync(formData);
             }
             resetForm();
             onClose();
@@ -130,15 +178,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
     };
 
     const isLoading = createCard.isPending || updateCard.isPending;
-
-    /**
-     * Altura máxima del modal:
-     * - En web usamos un porcentaje del viewport real
-     * - En móvil dejamos el 90% estándar
-     */
     const modalMaxHeight = Platform.OS === 'web'
-        ? Math.min(windowHeight * 0.85, 700)
-        : '90%';
+        ? Math.min(windowHeight * 0.85, 700) : '90%';
 
     return (
         <Modal visible={visible} animationType="slide" transparent>
@@ -151,7 +192,6 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                     <View style={[
                         styles.container,
                         { backgroundColor: C.background.secondary, maxHeight: modalMaxHeight },
-                        // En web: centrar horizontalmente con ancho máximo
                         Platform.OS === 'web' && styles.containerWeb,
                     ]}>
                         {/* Header */}
@@ -186,17 +226,18 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                         style={[
                                             styles.bankChip,
                                             { borderColor: color },
-                                            form.bank_name === bank && { backgroundColor: color },
+                                            bankName === bank && { backgroundColor: color },
                                         ]}
                                         onPress={() => {
-                                            updateField('bank_name', bank);
-                                            updateField('card_color', color);
+                                            setBankName(bank);
+                                            setCardColor(color);
+                                            if (errors.bank_name) setErrors(p => ({ ...p, bank_name: '' }));
                                         }}
                                     >
                                         <Text style={[
                                             styles.bankChipText,
                                             { color: C.text.secondary },
-                                            form.bank_name === bank && { color: '#FFFFFF', fontFamily: TYPOGRAPHY.family.bold },
+                                            bankName === bank && { color: '#FFFFFF', fontFamily: TYPOGRAPHY.family.bold },
                                         ]}>
                                             {bank}
                                         </Text>
@@ -212,14 +253,14 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                             <Input
                                 label="Alias (opcional)"
                                 placeholder="Ej: Personal, Viajes..."
-                                value={form.card_alias}
-                                onChangeText={(v) => updateField('card_alias', v)}
+                                value={cardAlias}
+                                onChangeText={setCardAlias}
                             />
                             <Input
                                 label="Últimos 4 dígitos"
                                 placeholder="1234"
-                                value={form.last_four_digits}
-                                onChangeText={(v) => updateField('last_four_digits', v)}
+                                value={lastFour}
+                                onChangeText={setLastFour}
                                 error={errors.last_four_digits}
                                 keyboardType="number-pad"
                                 maxLength={4}
@@ -227,8 +268,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                             <Input
                                 label="Límite de crédito"
                                 placeholder="50000"
-                                value={form.credit_limit > 0 ? String(form.credit_limit) : ''}
-                                onChangeText={(v) => updateField('credit_limit', parseFloat(v) || 0)}
+                                value={nums.credit_limit}
+                                onChangeText={(v) => updateNum('credit_limit', v)}
                                 error={errors.credit_limit}
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
@@ -236,8 +277,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                             <Input
                                 label="Saldo actual"
                                 placeholder="0"
-                                value={form.current_balance > 0 ? String(form.current_balance) : ''}
-                                onChangeText={(v) => updateField('current_balance', parseFloat(v) || 0)}
+                                value={nums.current_balance}
+                                onChangeText={(v) => updateNum('current_balance', v)}
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />
@@ -248,8 +289,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                     <Input
                                         label="Día de corte"
                                         placeholder="15"
-                                        value={String(form.cut_off_day)}
-                                        onChangeText={(v) => updateField('cut_off_day', parseInt(v) || 1)}
+                                        value={nums.cut_off_day}
+                                        onChangeText={(v) => updateNum('cut_off_day', v)}
                                         error={errors.cut_off_day}
                                         keyboardType="number-pad"
                                         maxLength={2}
@@ -259,8 +300,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                     <Input
                                         label="Día de pago"
                                         placeholder="5"
-                                        value={String(form.payment_due_day)}
-                                        onChangeText={(v) => updateField('payment_due_day', parseInt(v) || 1)}
+                                        value={nums.payment_due_day}
+                                        onChangeText={(v) => updateNum('payment_due_day', v)}
                                         error={errors.payment_due_day}
                                         keyboardType="number-pad"
                                         maxLength={2}
@@ -281,8 +322,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                     <Input
                                         label="Pago Mínimo"
                                         placeholder="0"
-                                        value={(form.minimum_payment ?? 0) > 0 ? String(form.minimum_payment) : ''}
-                                        onChangeText={(v) => updateField('minimum_payment', parseFloat(v) || 0)}
+                                        value={nums.minimum_payment}
+                                        onChangeText={(v) => updateNum('minimum_payment', v)}
                                         keyboardType="decimal-pad"
                                         leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                                     />
@@ -291,8 +332,8 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
                                     <Input
                                         label="Pago sin Intereses"
                                         placeholder="0"
-                                        value={(form.no_interest_payment ?? 0) > 0 ? String(form.no_interest_payment) : ''}
-                                        onChangeText={(v) => updateField('no_interest_payment', parseFloat(v) || 0)}
+                                        value={nums.no_interest_payment}
+                                        onChangeText={(v) => updateNum('no_interest_payment', v)}
                                         keyboardType="decimal-pad"
                                         leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                                     />
@@ -317,71 +358,38 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
 }
 
 const styles = StyleSheet.create({
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        justifyContent: 'flex-end',
-    },
-    /** Zona tocable para cerrar al hacer tap fuera */
-    overlayTouchable: {
-        flex: 1,
-    },
-    keyboardView: {
-        // No usar flex:1 aquí — permite que el container crezca solo lo que necesite
-        justifyContent: 'flex-end',
-    },
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    overlayTouchable: { flex: 1 },
+    keyboardView: { justifyContent: 'flex-end' },
     container: {
         borderTopLeftRadius: RADIUS['2xl'],
         borderTopRightRadius: RADIUS['2xl'],
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
-        // En móvil el maxHeight se aplica inline
     },
-    /** En web: centrar y limitar ancho para que no se estire en desktop */
     containerWeb: {
         alignSelf: 'center' as any,
-        width: '100%',
-        maxWidth: 500,
+        width: '100%', maxWidth: 500,
         borderBottomLeftRadius: RADIUS['2xl'],
         borderBottomRightRadius: RADIUS['2xl'],
     },
-    scrollContent: {
-        paddingBottom: SPACING['3xl'],
-    },
+    scrollContent: { paddingBottom: SPACING['3xl'] },
     header: {
         flexDirection: 'row', justifyContent: 'space-between',
         alignItems: 'center', marginBottom: SPACING.xl,
     },
     title: { fontFamily: TYPOGRAPHY.family.bold, fontSize: TYPOGRAPHY.size.xl },
     closeBtn: { fontSize: 22, padding: SPACING.sm },
-    label: {
-        fontFamily: TYPOGRAPHY.family.medium,
-        fontSize: TYPOGRAPHY.size.sm,
-        marginBottom: SPACING.sm,
-    },
-    sectionLabel: {
-        fontFamily: TYPOGRAPHY.family.bold,
-        fontSize: TYPOGRAPHY.size.md,
-        marginTop: SPACING.sm,
-        marginBottom: SPACING.xs,
-    },
-    sectionHint: {
-        fontFamily: TYPOGRAPHY.family.regular,
-        fontSize: TYPOGRAPHY.size.xs,
-        marginBottom: SPACING.md,
-    },
+    label: { fontFamily: TYPOGRAPHY.family.medium, fontSize: TYPOGRAPHY.size.sm, marginBottom: SPACING.sm },
+    sectionLabel: { fontFamily: TYPOGRAPHY.family.bold, fontSize: TYPOGRAPHY.size.md, marginTop: SPACING.sm, marginBottom: SPACING.xs },
+    sectionHint: { fontFamily: TYPOGRAPHY.family.regular, fontSize: TYPOGRAPHY.size.xs, marginBottom: SPACING.md },
     bankRow: { marginBottom: SPACING.md, flexGrow: 0 },
     bankChip: {
         paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
         borderRadius: RADIUS.full, borderWidth: 1.5, marginRight: SPACING.sm,
     },
     bankChipText: { fontFamily: TYPOGRAPHY.family.medium, fontSize: TYPOGRAPHY.size.sm },
-    fieldError: {
-        fontFamily: TYPOGRAPHY.family.regular,
-        fontSize: TYPOGRAPHY.size.xs,
-        marginTop: -SPACING.sm,
-        marginBottom: SPACING.md,
-    },
+    fieldError: { fontFamily: TYPOGRAPHY.family.regular, fontSize: TYPOGRAPHY.size.xs, marginTop: -SPACING.sm, marginBottom: SPACING.md },
     inputIcon: { fontFamily: TYPOGRAPHY.family.semibold, fontSize: 16 },
     row: { flexDirection: 'row', gap: SPACING.md },
     halfInput: { flex: 1 },

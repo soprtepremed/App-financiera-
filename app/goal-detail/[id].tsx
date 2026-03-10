@@ -26,7 +26,7 @@ import { GlassCard, ProgressRing, ProgressBar, Button } from '../../src/componen
 import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import { useThemeStore } from '../../src/store/themeStore';
-import { formatCurrency } from '../../src/utils/formatters';
+import { formatCurrency, parseAmount } from '../../src/utils/formatters';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../src/constants/theme';
 
 // ── Hooks locales ──
@@ -289,7 +289,7 @@ function ContributeModal({ visible, onClose, goalId, isDark }: {
     const [amount, setAmount] = useState('');
 
     const handleSave = async () => {
-        const num = parseFloat(amount);
+        const num = parseAmount(amount);
         if (isNaN(num) || num <= 0) { Alert.alert('Error', 'Ingresa un monto válido'); return; }
         await contribute.mutateAsync(num);
         setAmount('');

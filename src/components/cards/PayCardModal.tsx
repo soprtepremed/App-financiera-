@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCreatePayment, useCardPayments, getPaymentAmounts } from '../../hooks/useCardPayments';
-import { formatCurrency } from '../../utils/formatters';
+import { formatCurrency, parseAmount } from '../../utils/formatters';
 import { useThemeStore } from '../../store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import type { CreditCard } from '../../types/database';
@@ -45,7 +45,7 @@ export function PayCardModal({ visible, onClose, card }: PayCardModalProps) {
             case 'minimum': return amounts.minimum;
             case 'no_interest': return amounts.noInterest;
             case 'full': return amounts.full;
-            case 'custom': return parseFloat(customAmount) || 0;
+            case 'custom': return parseAmount(customAmount);
         }
     };
 

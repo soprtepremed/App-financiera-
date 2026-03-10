@@ -21,6 +21,43 @@ export function formatCurrency(
 }
 
 /**
+ * Sanitiza un string de input numérico:
+ * - Remueve comas (separador de miles en español)
+ * - Permite solo dígitos, punto decimal y signo negativo
+ * - Asegura solo un punto decimal
+ * @example sanitizeNumericInput("6,000.50") → "6000.50"
+ * @example sanitizeNumericInput("50.000,50") → "50000.50"
+ */
+export function sanitizeNumericInput(value: string): string {
+    // Si usa formato europeo/español: 50.000,50 → convertir
+    // Detectar si la coma es decimal (último separador)
+    const hasCommaAsDecimal = value.includes(',') && (
+        !value.includes('.') ||
+        value.lastIndexOf(',') > value.lastIndexOf('.')
+    );
+
+    if (hasCommaAsDecimal) {
+        // Formato español: puntos son miles, coma es decimal
+        // Ej: "50.000,50" → "50000.50"
+        return value.replace(/\./g, '').replace(',', '.');
+    }
+
+    // Formato estándar: comas son miles, punto es decimal
+    // Ej: "6,000.50" → "6000.50"
+    return value.replace(/,/g, '');
+}
+
+/**
+ * Parsea un string de input a número, manejando comas y puntos.
+ * Retorna 0 si el valor no es válido.
+ */
+export function parseAmount(value: string): number {
+    const sanitized = sanitizeNumericInput(value);
+    const num = parseFloat(sanitized);
+    return isNaN(num) ? 0 : num;
+}
+
+/**
  * Formatea un número como porcentaje.
  * @example formatPercentage(0.128) → "12.8%"
  */

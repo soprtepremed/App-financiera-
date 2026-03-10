@@ -23,6 +23,7 @@ import {
     type DebitAccountFormData,
 } from '../../hooks/useDebitAccounts';
 import { useThemeStore } from '../../store/themeStore';
+import { parseAmount } from '../../utils/formatters';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../../constants/theme';
 
 // ── Colores de bancos ──
@@ -69,6 +70,8 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
         current_balance: 0,
         account_color: '#10B981',
     });
+    // Saldo como texto para evitar problemas con comas/puntos
+    const [balanceText, setBalanceText] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     useEffect(() => {
@@ -81,6 +84,7 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
                 current_balance: editAccount.current_balance,
                 account_color: editAccount.account_color ?? '#10B981',
             });
+            setBalanceText(editAccount.current_balance > 0 ? String(editAccount.current_balance) : '');
         } else {
             resetForm();
         }
@@ -91,6 +95,7 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
             bank_name: '', account_alias: '', last_four_digits: '',
             account_type: 'debit', current_balance: 0, account_color: '#10B981',
         });
+        setBalanceText('');
         setErrors({});
     };
 
@@ -104,11 +109,15 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
         if (!form.bank_name.trim()) newErrors.bank_name = 'Selecciona un banco';
         if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
+        // Parsear saldo desde texto
+        const parsedBalance = parseAmount(balanceText);
+
         try {
+            const dataToSave = { ...form, current_balance: parsedBalance };
             if (isEditing && editAccount) {
-                await updateAccount.mutateAsync({ id: editAccount.id, ...form });
+                await updateAccount.mutateAsync({ id: editAccount.id, ...dataToSave });
             } else {
-                await createAccount.mutateAsync(form);
+                await createAccount.mutateAsync(dataToSave);
             }
             resetForm();
             onClose();
@@ -227,8 +236,8 @@ export function AddDebitAccountModal({ visible, onClose, editAccount }: Props) {
                             <Input
                                 label="Saldo actual"
                                 placeholder="0"
-                                value={form.current_balance > 0 ? String(form.current_balance) : ''}
-                                onChangeText={(v) => updateField('current_balance', parseFloat(v) || 0)}
+                                value={balanceText}
+                                onChangeText={(v) => setBalanceText(v.replace(/[^0-9.,]/g, ''))}
                                 keyboardType="decimal-pad"
                                 leftIcon={<Text style={[styles.inputIcon, { color: C.text.secondary }]}>$</Text>}
                             />

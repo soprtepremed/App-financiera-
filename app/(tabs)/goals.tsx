@@ -24,7 +24,7 @@ import { GlassCard, ProgressRing, ProgressBar, Button, Input } from '../../src/c
 import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import { useThemeStore } from '../../src/store/themeStore';
-import { formatCurrency } from '../../src/utils/formatters';
+import { formatCurrency, parseAmount } from '../../src/utils/formatters';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../../src/constants/theme';
 
 // ── Hooks locales ──
@@ -253,8 +253,8 @@ function AddGoalModal({ visible, onClose, isDark }: { visible: boolean; onClose:
 
     const handleSave = async () => {
         if (!name.trim() || !target) return;
-        const targetAmount = parseFloat(target);
-        const monthlyAmount = parseFloat(monthly) || 0;
+        const targetAmount = parseAmount(target);
+        const monthlyAmount = parseAmount(monthly);
         const monthsNeeded = monthlyAmount > 0 ? Math.ceil(targetAmount / monthlyAmount) : 12;
         const targetDate = new Date();
         targetDate.setMonth(targetDate.getMonth() + monthsNeeded);
@@ -327,8 +327,8 @@ function ContributeModal({ goalId, onClose, isDark }: { goalId: string | null; o
     const [amount, setAmount] = useState('');
 
     const handleSave = async () => {
-        if (!goalId || !amount || parseFloat(amount) <= 0) return;
-        await contribute.mutateAsync({ id: goalId, amount: parseFloat(amount) });
+        if (!goalId || !amount || parseAmount(amount) <= 0) return;
+        await contribute.mutateAsync({ id: goalId, amount: parseAmount(amount) });
         setAmount('');
         onClose();
     };
