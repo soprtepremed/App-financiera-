@@ -104,22 +104,22 @@ export default function DashboardScreen() {
                         {/* Info complementaria: crédito disponible y límite */}
                         {cards.length > 0 && (
                             <View style={styles.balanceDetails}>
-                                <View style={styles.balanceDetailItem}>
-                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Disponible</Text>
+                                <View style={styles.balanceDetailRow}>
+                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Crédito disponible</Text>
                                     <Text style={[styles.balanceDetailValue, { color: C.accent.success }]}>
                                         {formatCurrency(totalAvailable, false)}
                                     </Text>
                                 </View>
-                                <View style={[styles.balanceDetailDivider, { backgroundColor: C.border.secondary }]} />
-                                <View style={styles.balanceDetailItem}>
+                                <View style={[styles.balanceDetailSeparator, { backgroundColor: C.border.secondary }]} />
+                                <View style={styles.balanceDetailRow}>
                                     <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Límite total</Text>
                                     <Text style={[styles.balanceDetailValue, { color: C.text.secondary }]}>
                                         {formatCurrency(totalLimit, false)}
                                     </Text>
                                 </View>
-                                <View style={[styles.balanceDetailDivider, { backgroundColor: C.border.secondary }]} />
-                                <View style={styles.balanceDetailItem}>
-                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Uso</Text>
+                                <View style={[styles.balanceDetailSeparator, { backgroundColor: C.border.secondary }]} />
+                                <View style={styles.balanceDetailRow}>
+                                    <Text style={[styles.balanceDetailLabel, { color: C.text.tertiary }]}>Utilización</Text>
                                     <Text style={[styles.balanceDetailValue, { color: usagePercent > 70 ? C.accent.danger : usagePercent > 40 ? C.accent.warning : C.accent.success }]}>
                                         {usagePercent}%
                                     </Text>
@@ -405,33 +405,31 @@ const styles = StyleSheet.create({
     },
     // ── Balance details ──
     balanceDetails: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        alignItems: 'center',
         marginTop: SPACING.lg,
         paddingTop: SPACING.md,
         borderTopWidth: 1,
         borderTopColor: 'rgba(255,255,255,0.1)',
+        gap: 2,
     },
-    balanceDetailItem: {
+    balanceDetailRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        flex: 1,
+        paddingVertical: SPACING.xs,
+        paddingHorizontal: SPACING.sm,
     },
     balanceDetailLabel: {
-        fontFamily: TYPOGRAPHY.family.regular,
-        fontSize: TYPOGRAPHY.size.xs,
-        textTransform: 'uppercase' as const,
-        letterSpacing: 0.5,
-        marginBottom: 4,
+        fontFamily: TYPOGRAPHY.family.medium,
+        fontSize: TYPOGRAPHY.size.sm,
     },
     balanceDetailValue: {
         fontFamily: TYPOGRAPHY.family.bold,
         fontSize: TYPOGRAPHY.size.md,
     },
-    balanceDetailDivider: {
-        width: 1,
-        height: 30,
-        opacity: 0.3,
+    balanceDetailSeparator: {
+        height: 1,
+        opacity: 0.15,
+        marginHorizontal: SPACING.sm,
     },
     // ── Cards carousel ──
     cardsCarousel: {
