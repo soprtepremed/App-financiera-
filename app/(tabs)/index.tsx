@@ -83,7 +83,10 @@ export default function DashboardScreen() {
                         <Text style={[styles.greeting, { color: C.text.secondary }]}>{greeting},</Text>
                         <Text style={[styles.userName, { color: C.text.primary }]}>{firstName} 👋</Text>
                     </View>
-                    <Pressable style={[styles.notificationBadge, { backgroundColor: C.background.card }]}>
+                    <Pressable
+                        onPress={() => router.push('/notifications' as any)}
+                        style={[styles.notificationBadge, { backgroundColor: C.background.card }]}
+                    >
                         <Ionicons name="notifications-outline" size={22} color={C.text.secondary} />
                         {upcomingPayments.length > 0 && (
                             <View style={[styles.notifDot, { backgroundColor: C.accent.danger }]} />
@@ -171,7 +174,9 @@ export default function DashboardScreen() {
                                         ])}
                                         padding="lg"
                                     >
-                                        <Text style={[styles.miniCardBank, { color: C.text.primary }]}>{card.bank_name}</Text>
+                                        <Text style={[styles.miniCardBank, { color: C.text.primary }]}>
+                                            {card.card_alias && card.bank_name === 'Otro' ? card.card_alias : card.bank_name}
+                                        </Text>
                                         <Text style={[styles.miniCardNumber, { color: C.text.tertiary }]}>
                                             {formatCardNumber(card.last_four_digits)}
                                         </Text>
@@ -213,6 +218,7 @@ export default function DashboardScreen() {
                             accentColor={C.accent.danger}
                             labelColor={C.text.secondary}
                             borderColor={C.border.secondary}
+                            onPress={() => router.push('/expenses' as any)}
                         />
                         <SummaryRow
                             iconName="business-outline"
@@ -304,20 +310,23 @@ interface SummaryRowProps {
     labelColor: string;
     borderColor: string;
     isLast?: boolean;
+    onPress?: () => void;
 }
 
 /** Fila individual del resumen mensual */
-function SummaryRow({ iconName, label, amount, accentColor, labelColor, borderColor, isLast = false }: SummaryRowProps) {
+function SummaryRow({ iconName, label, amount, accentColor, labelColor, borderColor, isLast = false, onPress }: SummaryRowProps) {
+    const Container = onPress ? Pressable : View;
     return (
-        <View style={[styles.summaryRow, !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor }]}>
+        <Container onPress={onPress} style={[styles.summaryRow, !isLast && { borderBottomWidth: 1, borderBottomColor: borderColor }]}>
             <View style={styles.summaryLeft}>
                 <Ionicons name={iconName} size={20} color={accentColor} />
                 <Text style={[styles.summaryLabel, { color: labelColor }]}>{label}</Text>
+                {onPress && <Ionicons name="chevron-forward" size={14} color={labelColor} />}
             </View>
             <Text style={[styles.summaryAmount, { color: accentColor }]}>
                 {formatCurrency(amount, false)}
             </Text>
-        </View>
+        </Container>
     );
 }
 

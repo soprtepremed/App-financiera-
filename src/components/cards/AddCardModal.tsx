@@ -189,7 +189,7 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
         ? Math.min(windowHeight * 0.85, 700) : '90%';
 
     return (
-        <Modal visible={visible} animationType="slide" transparent>
+        <Modal visible={visible} animationType="fade" transparent>
             <View style={styles.overlay}>
                 <Pressable style={styles.overlayTouchable} onPress={onClose} />
                 <KeyboardAvoidingView
@@ -377,20 +377,32 @@ export function AddCardModal({ visible, onClose, editCard }: Props) {
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    overlayTouchable: { flex: 1 },
-    keyboardView: { justifyContent: 'flex-end' },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.lg,
+    },
+    overlayTouchable: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+    },
+    keyboardView: {
+        width: '100%',
+        maxWidth: 500,
+        maxHeight: '90%',
+    },
     container: {
-        borderTopLeftRadius: RADIUS['2xl'],
-        borderTopRightRadius: RADIUS['2xl'],
+        borderRadius: RADIUS['2xl'],
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
+        overflow: 'hidden',
     },
     containerWeb: {
         alignSelf: 'center' as any,
-        width: '100%', maxWidth: 500,
-        borderBottomLeftRadius: RADIUS['2xl'],
-        borderBottomRightRadius: RADIUS['2xl'],
+        width: '100%',
+        maxWidth: 500,
     },
     scrollContent: { paddingBottom: SPACING['3xl'] },
     header: {

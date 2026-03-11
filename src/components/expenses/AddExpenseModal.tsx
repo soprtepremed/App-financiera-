@@ -96,7 +96,7 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
         : '90%';
 
     return (
-        <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
+        <Modal visible={visible} animationType="fade" transparent onRequestClose={handleClose}>
             <View style={styles.overlay}>
                 <Pressable style={styles.overlayTouchable} onPress={handleClose} />
                 <KeyboardAvoidingView
@@ -286,12 +286,24 @@ export function AddExpenseModal({ visible, onClose, preselectedCardId }: Props) 
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
-    overlayTouchable: { flex: 1 },
-    keyboardView: { justifyContent: 'flex-end' },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.lg,
+    },
+    overlayTouchable: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+    },
+    keyboardView: {
+        width: '100%',
+        maxWidth: 500,
+        maxHeight: '90%',
+    },
     modalContainer: {
-        borderTopLeftRadius: RADIUS['4xl'],
-        borderTopRightRadius: RADIUS['4xl'],
+        borderRadius: RADIUS['2xl'],
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
         paddingBottom: SPACING['2xl'],
@@ -301,8 +313,6 @@ const styles = StyleSheet.create({
         alignSelf: 'center' as any,
         width: '100%',
         maxWidth: 500,
-        borderBottomLeftRadius: RADIUS['2xl'],
-        borderBottomRightRadius: RADIUS['2xl'],
     },
     header: {
         flexDirection: 'row', justifyContent: 'space-between',

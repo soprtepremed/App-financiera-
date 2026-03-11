@@ -3,10 +3,35 @@
  * Configura providers globales, carga de fuentes,
  * inicialización de auth y protección de rutas
  */
+import { Platform, LogBox } from 'react-native';
 
+/**
+ * Suprimir warnings/errors de dependencias externas en web.
+ * Ninguno afecta funcionalidad — son bugs conocidos de RN-Web/Reanimated.
+ */
+LogBox.ignoreLogs([
+    'Invalid DOM property',
+    '"shadow*" style props are deprecated',
+    'props.pointerEvents is deprecated',
+    'Listening to push token changes',
+]);
+
+if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const origError = console.error;
+    const origWarn = console.warn;
+    const suppressPatterns = ['transform-origin', 'shadow*', 'pointerEvents', 'push token'];
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && suppressPatterns.some(p => args[0].includes(p))) return;
+        origError.apply(console, args);
+    };
+    console.warn = (...args: any[]) => {
+        if (typeof args[0] === 'string' && suppressPatterns.some(p => args[0].includes(p))) return;
+        origWarn.apply(console, args);
+    };
+}
 
 import { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {

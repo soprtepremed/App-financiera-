@@ -287,12 +287,17 @@ function CardItem({ card, index, isDark, onEdit, onDelete, onPay, onDetail }: Ca
                 {/* Header de tarjeta */}
                 <View style={styles.cardHeader}>
                     <View>
-                        <Text style={[styles.cardBank, { color: C.text.primary }]}>{card.bank_name}</Text>
+                        <Text style={[styles.cardBank, { color: C.text.primary }]}>
+                            {card.card_alias && card.bank_name === 'Otro' ? card.card_alias : card.bank_name}
+                        </Text>
                         <Text style={[styles.cardNumber, { color: C.text.tertiary }]}>
                             {formatCardNumber(card.last_four_digits)}
                         </Text>
-                        {card.card_alias && (
+                        {card.card_alias && card.bank_name !== 'Otro' && (
                             <Text style={[styles.cardAlias, { color: C.accent.primary }]}>{card.card_alias}</Text>
+                        )}
+                        {card.bank_name === 'Otro' && (
+                            <Text style={[styles.cardAlias, { color: C.text.tertiary }]}>Otro banco</Text>
                         )}
                     </View>
                     <View style={{

@@ -211,44 +211,46 @@ export const RADIUS = {
 } as const;
 
 /** Sombras — SmartWallet dark shadows */
+/**
+ * Sombras multiplataforma.
+ * Web: solo boxShadow (shadow* está deprecado en react-native-web 0.20+).
+ * iOS: shadow* props.
+ * Android: elevation.
+ */
+import { Platform } from 'react-native';
+
+function makeShadow(
+    color: string,
+    offsetY: number,
+    opacity: number,
+    radius: number,
+    elevation: number,
+) {
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const rgba = `rgba(${r},${g},${b},${opacity})`;
+
+    if (Platform.OS === 'web') {
+        return { boxShadow: `0px ${offsetY}px ${radius}px ${rgba}` };
+    }
+    return {
+        shadowColor: color,
+        shadowOffset: { width: 0, height: offsetY },
+        shadowOpacity: opacity,
+        shadowRadius: radius,
+        elevation,
+    };
+}
+
 export const SHADOWS = {
-    sm: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    md: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
-    },
+    sm: makeShadow('#000000', 1, 0.2, 2, 2),
+    md: makeShadow('#000000', 4, 0.3, 8, 5),
     /** shadow-xl — cards */
-    lg: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.40,
-        shadowRadius: 16,
-        elevation: 8,
-    },
+    lg: makeShadow('#000000', 8, 0.40, 16, 8),
     /** shadow-2xl — floating elements */
-    floating: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.30,
-        shadowRadius: 24,
-        elevation: 12,
-    },
-    glow: {
-        shadowColor: '#6366F1',
-        shadowOffset: { width: 0, height: 0 },
-        shadowOpacity: 0.4,
-        shadowRadius: 20,
-        elevation: 10,
-    },
+    floating: makeShadow('#6366F1', 8, 0.30, 24, 12),
+    glow: makeShadow('#6366F1', 0, 0.4, 20, 10),
 } as const;
 
 /** Animaciones */

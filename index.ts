@@ -1,3 +1,15 @@
+/**
+ * Suprimir error de transform-origin de react-native-reanimated en web.
+ * DEBE ejecutarse antes de cualquier import de componentes.
+ */
+if (typeof window !== 'undefined') {
+    const _origConsoleError = console.error;
+    console.error = (...args: any[]) => {
+        if (typeof args[0] === 'string' && args[0].includes('transform-origin')) return;
+        _origConsoleError.apply(console, args);
+    };
+}
+
 import { registerRootComponent } from 'expo';
 import App from './App';
 

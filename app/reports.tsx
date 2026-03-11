@@ -23,6 +23,7 @@ import { useBudgetSummary } from '../src/hooks/useBudget';
 import { formatCurrency } from '../src/utils/formatters';
 import { useThemeStore } from '../src/store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../src/constants/theme';
+import { safeGoBack } from '../src/utils/navigation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BAR_MAX_W = SCREEN_WIDTH - SPACING.xl * 4 - 80;
@@ -83,7 +84,7 @@ export default function ReportsScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable onPress={() => safeGoBack(router)} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={22} color={C.text.primary} />
                 </Pressable>
                 <Text style={[styles.title, { color: C.text.primary }]}>📊 Reportes</Text>

@@ -23,6 +23,7 @@ import { useNotifications, requestNotificationPermission } from '../src/hooks/us
 import { useCards } from '../src/hooks/useCards';
 import { useThemeStore } from '../src/store/themeStore';
 import { getThemeColors, TYPOGRAPHY, SPACING, RADIUS } from '../src/constants/theme';
+import { safeGoBack } from '../src/utils/navigation';
 import * as SecureStore from 'expo-secure-store';
 
 const NOTIF_ENABLED_KEY = 'finanzapp_notifications_enabled';
@@ -42,18 +43,32 @@ export default function NotificationsScreen() {
     // Cargar estado guardado
     useEffect(() => {
         (async () => {
-            const saved = await SecureStore.getItemAsync(NOTIF_ENABLED_KEY);
-            setEnabled(saved === 'true');
-            const scheduled = await getScheduled();
-            setScheduledCount(scheduled.length);
+            try {
+                if (Platform.OS === 'web') {
+                    // SecureStore no funciona en web, usar localStorage
+                    const saved = typeof window !== 'undefined'
+                        ? localStorage.getItem(NOTIF_ENABLED_KEY)
+                        : null;
+                    setEnabled(saved === 'true');
+                    setScheduledCount(0);
+                } else {
+                    const saved = await SecureStore.getItemAsync(NOTIF_ENABLED_KEY);
+                    setEnabled(saved === 'true');
+                    const scheduled = await getScheduled();
+                    setScheduledCount(scheduled.length);
+                }
+            } catch {
+                // Fallback seguro
+                setEnabled(false);
+                setScheduledCount(0);
+            }
         })();
     }, []);
 
+    const isWeb = Platform.OS === 'web';
+
     const handleToggle = async (value: boolean) => {
-        if (Platform.OS === 'web') {
-            Alert.alert('No disponible', 'Las notificaciones no están disponibles en web.');
-            return;
-        }
+        if (isWeb) return; // En web no hay notificaciones push
 
         setIsLoading(true);
 
@@ -100,7 +115,7 @@ export default function NotificationsScreen() {
 
             {/* Header */}
             <View style={styles.header}>
-                <Pressable onPress={() => router.back()} style={styles.backBtn}>
+                <Pressable onPress={() => safeGoBack(router)} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={22} color={C.text.primary} />
                 </Pressable>
                 <Text style={[styles.title, { color: C.text.primary }]}>🔔 Notificaciones</Text>
@@ -133,11 +148,16 @@ export default function NotificationsScreen() {
                             <Switch
                                 value={enabled}
                                 onValueChange={handleToggle}
-                                disabled={isLoading}
+                                disabled={isLoading || isWeb}
                                 trackColor={{ false: C.background.tertiary, true: C.accent.primary }}
                                 thumbColor="#FFFFFF"
                             />
                         </View>
+                        {isWeb && (
+                            <Text style={[styles.webSwitchNote, { color: C.accent.warning }]}>
+                                ⚠️ Solo disponible en la app móvil (iOS / Android)
+                            </Text>
+                        )}
                     </GlassCard>
                 </Animated.View>
 
@@ -272,5 +292,11 @@ const styles = StyleSheet.create({
     // Web note
     webNote: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.md },
     webNoteText: { fontFamily: TYPOGRAPHY.family.regular, fontSize: TYPOGRAPHY.size.sm, flex: 1, lineHeight: 20 },
+    webSwitchNote: {
+        fontFamily: TYPOGRAPHY.family.medium,
+        fontSize: TYPOGRAPHY.size.xs,
+        marginTop: SPACING.sm,
+        textAlign: 'center',
+    },
     bottomSpacer: { height: 20 },
 });

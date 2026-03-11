@@ -88,8 +88,9 @@ export function PayCardModal({ visible, onClose, card }: PayCardModalProps) {
     };
 
     return (
-        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+        <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
             <View style={styles.overlay}>
+                <Pressable style={styles.overlayDismiss} onPress={onClose} />
                 <View style={[styles.modalContainer, { backgroundColor: C.background.card }]}>
                     {/* ── Header ── */}
                     <View style={styles.header}>
@@ -289,14 +290,26 @@ function PaymentTypeButton({ label, amount, icon, selected, isDark, onPress }: P
 }
 
 const styles = StyleSheet.create({
-    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING.lg,
+    },
+    overlayDismiss: {
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+    },
     modalContainer: {
-        borderTopLeftRadius: RADIUS['4xl'],
-        borderTopRightRadius: RADIUS['4xl'],
+        borderRadius: RADIUS['2xl'],
+        width: '100%',
+        maxWidth: 500,
         maxHeight: '90%',
         paddingTop: SPACING.xl,
         paddingHorizontal: SPACING.xl,
         paddingBottom: SPACING['2xl'],
+        overflow: 'hidden',
     },
     header: {
         flexDirection: 'row', justifyContent: 'space-between',

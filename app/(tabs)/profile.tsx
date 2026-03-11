@@ -86,7 +86,7 @@ export default function ProfileScreen() {
                 {/* ── Sección de cuenta ── */}
                 <Text style={[styles.sectionLabel, { color: C.text.tertiary }]}>Cuenta</Text>
                 <GlassCard variant="elevated" padding="md">
-                    <ProfileRow iconName="person-outline" label="Editar perfil" isDark={isDark} />
+                    <ProfileRow iconName="person-outline" label="Editar perfil" isDark={isDark} onPress={() => router.push('/edit-profile' as any)} />
                     <ProfileRow iconName="notifications-outline" label="Notificaciones" isDark={isDark} onPress={() => router.push('/notifications' as any)} />
                     <ProfileRow iconName="cash-outline" label="Moneda" value="MXN" isDark={isDark} />
                     <ProfileRow
@@ -112,7 +112,7 @@ export default function ProfileScreen() {
                         iconName="trending-up-outline"
                         label="Historial mensual"
                         isDark={isDark}
-                        onPress={() => router.push('/reports' as any)}
+                        onPress={() => router.push('/history' as any)}
                         isLast
                     />
                 </GlassCard>
@@ -120,8 +120,8 @@ export default function ProfileScreen() {
                 {/* ── Sección de info ── */}
                 <Text style={[styles.sectionLabel, { color: C.text.tertiary }]}>Información</Text>
                 <GlassCard variant="elevated" padding="md">
-                    <ProfileRow iconName="document-text-outline" label="Términos de uso" isDark={isDark} />
-                    <ProfileRow iconName="shield-checkmark-outline" label="Política de privacidad" isDark={isDark} />
+                    <ProfileRow iconName="document-text-outline" label="Términos de uso" isDark={isDark} onPress={() => router.push('/terms' as any)} />
+                    <ProfileRow iconName="shield-checkmark-outline" label="Política de privacidad" isDark={isDark} onPress={() => router.push('/privacy' as any)} />
                     <ProfileRow iconName="phone-portrait-outline" label="Versión" value="1.0.0" isDark={isDark} isLast />
                 </GlassCard>
 
